@@ -1,0 +1,103 @@
+from rest_framework import serializers
+from .models import Lodge, Room, Booking, LodgeImage, Review,Amenity
+from decimal import Decimal, ROUND_HALF_UP
+
+
+
+class AmenitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Amenity
+        fields = ['id', 'name', 'icon']
+
+class LodgeImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LodgeImage
+        fields = '__all__'
+
+
+class RoomSerializer(serializers.ModelSerializer):
+    owner_id = serializers.IntegerField(
+        source='lodge.owner.id',
+        read_only=True
+    )
+
+    owner_username = serializers.CharField(
+        source='lodge.owner.username',
+        read_only=True
+    )
+    class Meta:
+        model = Room
+        fields = '__all__'  
+        
+
+class ReviewSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.username', read_only=True)
+
+    class Meta:
+        model = Review
+        fields = '__all__'  
+
+
+class LodgeSerializer(serializers.ModelSerializer):
+
+    images = LodgeImageSerializer(many=True, read_only=True)
+    rooms = RoomSerializer(many=True, read_only=True)
+    reviews = ReviewSerializer(many=True, read_only=True)
+    amenities = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Amenity.objects.all(),
+        required=False
+        )
+    owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+
+    class Meta:
+        model = Lodge
+        fields = '__all__'
+        read_only_fields = ['owner']
+
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        images_data = request.FILES.getlist("images") if request else []
+
+
+        amenities = validated_data.pop("amenities", [])
+        lodge = Lodge.objects.create(**validated_data)
+
+
+        for img in images_data:
+            LodgeImage.objects.create(
+                lodge=lodge,
+                image=img
+                )
+
+        if amenities:
+            lodge.amenities.set(amenities)
+
+        return lodge
+
+    def update(self, instance, validated_data):
+        amenities = validated_data.pop("amenities", None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        instance.save()
+
+        if amenities is not None:
+            instance.amenities.set(amenities)
+
+        return instance
+
+
+class BookingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Booking
+        fields = '__all__'
+        read_only_fields = (
+            'customer',
+            'booking_reference',
+            'total_nights',
+            'subtotal',
+            'total_amount',
+        )
