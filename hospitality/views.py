@@ -5,6 +5,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from datetime import timedelta
 
 from .utils import generate_booking_reference
 from .permissions import IsHospitalityOwner
@@ -25,8 +26,16 @@ class AmenityViewSet(ReadOnlyModelViewSet):
 
 
 class LodgeViewSet(viewsets.ModelViewSet):
-    queryset = Lodge.objects.filter(is_active=True)
+    #queryset = Lodge.objects.filter(is_active=True)
     serializer_class = LodgeSerializer
+
+    def get_queryset(self):
+        if self.action in ['list', 'retrieve']:
+            return Lodge.objects.filter(is_active=True)
+
+        return Lodge.objects.filter(
+            owner=self.request.user
+            )
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -67,6 +76,34 @@ class LodgeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+    def update(self, request, *args, **kwargs):
+        print("\n🔥 ===== UPDATE REQUEST DEBUG =====")
+        print("DATA:", request.data)
+        print("FILES:", request.FILES)
+        print("CONTENT TYPE:", request.content_type)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial
+            )
+
+        if not serializer.is_valid():
+            print("\n❌ UPDATE ERRORS ❌")
+            print(serializer.errors)
+
+            return Response(
+                serializer.errors,
+                status=status.HTTP_400_BAD_REQUEST
+                )
+        serializer.save()
+        print("✅ LODGE UPDATED:", instance.id)
+        return Response(serializer.data,status=status.HTTP_200_OK)
+
+
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -106,12 +143,11 @@ class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve','availability']:
             return [permissions.AllowAny()]
         return [IsHospitalityOwner()]
 
     def create(self, request, *args, **kwargs):
-      
 
         serializer = self.get_serializer(data=request.data)
 
@@ -125,6 +161,29 @@ class RoomViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=201)
 
+   
+    @action(detail=True,methods=['get'],permission_classes=[permissions.AllowAny],authentication_classes=[])
+    def availability(self, request, pk=None):
+
+
+        bookings = Booking.objects.filter(
+            room_id=pk,
+            booking_status__in=['confirmed',]# 'checked_in'
+        )
+
+        booked_dates = []
+
+        for booking in bookings:
+            current = booking.check_in_date
+
+            while current < booking.check_out_date:
+                booked_dates.append(str(current))
+                current += timedelta(days=1)
+
+        return Response({
+            "booked_dates": booked_dates
+        })
+
 
 class BookingViewSet(viewsets.ModelViewSet):
     serializer_class = BookingSerializer
@@ -134,6 +193,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Booking.objects.filter(customer=self.request.user)
 
     def create(self, request, *args, **kwargs):
+        
         room_id = request.data.get('room')
         check_in_date = request.data.get('check_in_date')
         check_out_date = request.data.get('check_out_date')
@@ -166,7 +226,11 @@ class BookingViewSet(viewsets.ModelViewSet):
         total_amount = subtotal + service_fee
 
         serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+
+        serializer.is_valid(raise_exception=False)
+        if not serializer.is_valid():
+            print("❌ SERIALIZER ERRORS:", serializer.errors)
+            return Response(serializer.errors, status=400)
 
         serializer.save(
             customer=request.user,

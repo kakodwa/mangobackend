@@ -8,6 +8,7 @@ class User(AbstractUser):
         ('shop_owner', 'Shop Owner'),
         ('property_owner', 'Property Owner'),
         ('hospitality_owner', 'Hospitality Owner'),
+        ('event_organizer', 'Event Organizer'),
         ('admin', 'Admin'),
     )
 

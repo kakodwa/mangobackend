@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Status</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+
+        .success {
+            color: #28a745;
+        }
+
+        .failed {
+            color: #dc3545;
+        }
+
+        .pending {
+            color: #ffc107;
+        }
+
+        h2 {
+            margin: 10px 0;
+        }
+
+        p {
+            color: #666;
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 10px;
+            background: #0A84FF;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #0066cc;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+
+    {% if status == "completed" %}
+        <div class="icon success">✔</div>
+        <h2>Payment Successful</h2>
+
+    {% elif status == "failed" %}
+        <div class="icon failed">✖</div>
+        <h2>Payment Failed</h2>
+
+    {% else %}
+        <div class="icon pending">⏳</div>
+        <h2>Payment Pending</h2>
+    {% endif %}
+
+    <p><strong>Transaction:</strong> {{ tx_ref }}</p>
+    <p><strong>Amount:</strong> MWK {{ amount }}</p>
+
+    <button class="btn" onclick="closePage()">Continue</button>
+
+</div>
+
+<script>
+    function closePage() {
+        // Works in WebView or browser
+        if (window.history.length > 1) {
+            window.history.back();
+        } else {
+            window.location.href = "/";
+        }
+    }
+</script>
+
+</body>
+</html>

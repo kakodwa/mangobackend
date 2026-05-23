@@ -9,17 +9,54 @@ from django.http import JsonResponse
 from django.conf import settings
 from wallet.models import Wallet, WalletTransaction, Withdrawal,CompanyWallet,CompanyWalletTransaction
 from .paychangu_service import PayChanguService
+from django.db.models import F
 from .models import Payment, PaymentWebhook
+from products.models import Product
+from django.db import transaction
+from events.models import Ticket,TicketItem,EventTicketType
+from hospitality.models import Booking
 from delivery.models import Delivery
 from decimal import Decimal
 import random
 import string
 from .serializers import PaymentSerializer, PaymentInitiateSerializer
+from django.shortcuts import render
+
+
+def payment_return_view(request):
+    tx_ref = request.GET.get("tx_ref")
+    status = request.GET.get("status", "pending")
+    amount = request.GET.get("amount", "")
+
+    context = {
+        "tx_ref": tx_ref,
+        "status": status,
+        "amount": amount,
+    }
+
+    return render(request, "payments/payment_return.html", context)
+
+
+def visa_checkout_view(request):
+
+    context = {
+        "public_key": "pub-test-Z2fK1oH31qEvBjtf7FnBhp6CtMZ0vpMW",
+        "tx_ref": request.GET.get("tx_ref"),
+        "amount": request.GET.get("amount"),
+        "email": request.user.email,
+        "first_name": request.user.first_name,
+        "last_name": request.user.last_name,
+        "callback_url": "https://yourdomain.com/api/payments/paychangu_webhook/",
+        "return_url": "https://yourdomain.com/payment/return/?tx_ref=" + request.GET.get("tx_ref", ""),
+        "title": "Payment",
+        "description": "Visa Payment",
+    }
+
+    return render(request, "payments/visa_checkout.html", context)
 
 #Code used by assigned delivery person
 def generate_code():
     return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-
 
 class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payment.objects.all()
@@ -32,7 +69,11 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     # =========================
     # INITIATE PAYMENT
     # =========================
-    @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
+    @action(
+        detail=False,
+        methods=['post'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def initiate_payment(self, request):
 
         print("REQUEST PAYMENT DATA:", request.data)
@@ -43,57 +84,84 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
         if not serializer.is_valid():
+
             print("PAYMENT ERRORS:", serializer.errors)
 
             first_error = None
-            for field, errors in serializer.errors.items():
+            for _, errors in serializer.errors.items():
                 first_error = errors[0]
                 break
 
             return Response({
                 "success": False,
                 "message": first_error or "Invalid input data"
-                }, status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        # 1. CREATE PAYMENT FIRST
+        # =========================
+        # CREATE PAYMENT FIRST
+        # =========================
         payment = serializer.save()
 
-        # 2. GET DATA FROM REQUEST (IMPORTANT FIX)
-        phone_number = request.data.get("phone_number")
         payment_method = request.data.get("payment_method")
+        phone_number = request.data.get("phone_number")
 
-        # clean phone
         if phone_number:
             phone_number = phone_number.strip().replace(" ", "")
 
-        # 3. CALL PAYCHANGU SERVICE
+        # =========================
+        # VISA FLOW (NO PAYCHANGU CALL)
+        # =========================
+        if payment_method == "visa_card":
+
+            visa_data = {
+                "public_key": "pub-test-Z2fK1oH31qEvBjtf7FnBhp6CtMZ0vpMW",
+                "tx_ref": payment.payment_reference,
+                "amount": str(payment.amount),
+                "currency": "MWK",
+                "email": request.user.email,
+                "first_name": request.user.first_name or request.user.username,
+                "last_name": request.user.last_name or "",
+                "callback_url": "https://yourdomain.com/payments/paychangu_callback/",
+                 "return_url": (
+                    "http://127.0.0.1:8000/api/payments/payment/return/"
+                    f"?tx_ref={payment.payment_reference}"
+                    f"&amount={payment.amount}"
+                    f"&status=completed"
+                    ),
+                "title": payment.purpose,
+                "description": f"Payment for {payment.purpose}",
+            }
+
+            return Response({
+                "success": True,
+                "message": "Visa payment initialized",
+                "payment_id": payment.id,
+                "payment_reference": payment.payment_reference,
+                "visa_payment": visa_data
+            }, status=status.HTTP_201_CREATED)
+
+        # =========================
+        # MOBILE MONEY FLOW
+        # =========================
         service = PayChanguService()
 
         try:
-            if payment_method == "visa_card":
-                result = service.initiate_card_payment(
-                    payment,
-                    redirect_url="https://yourdomain.com/payment/success/"
-                )
-            else:
-                result = service.initiate_mobile_money(
-                    payment,
-                    phone_number 
-                )
+            result = service.initiate_mobile_money(
+                payment,
+                phone_number
+            )
 
         except Exception as e:
             return Response({
                 "success": False,
                 "message": "Server error. Please try again later."
-                }, status=500)
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-        # 4. CHECK RESPONSE
         if not result.get("success"):
             return Response({
                 "success": False,
                 "message": result.get("message", "Payment failed")
-                }, status=status.HTTP_400_BAD_REQUEST)
-
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         return Response({
             "success": True,
@@ -102,6 +170,28 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             "payment_reference": payment.payment_reference,
             "paychangu": result["data"]
         }, status=status.HTTP_201_CREATED)
+
+    # =========================
+    # PAYMENT STATUS (POLLING)
+    # =========================
+    @action(detail=False,methods=['get'],url_path=r'status/(?P<reference>[^/.]+)',permission_classes=[permissions.IsAuthenticated])
+    def payment_status(self, request, reference=None):
+
+        print("REQUEST STATUS DATA:", request.data)
+
+        try:
+            payment = Payment.objects.get(payment_reference=reference,user=request.user)
+
+            return Response({
+                "success": True,
+                "payment_reference": payment.payment_reference,
+                "status": payment.status,
+                "purpose": payment.purpose,
+                "amount": payment.amount
+                })
+
+        except Payment.DoesNotExist:
+            return Response({"success": False,"message": "Payment not found"}, status=404)
 
     # =========================
     # LIST USER PAYMENTS
@@ -260,12 +350,65 @@ def paychangu_webhook(request):
                     description=f"Commission from property unlock #{unlock.id}"
                 )
 
+
+            elif payment.purpose == "booking":
+                
+                booking = payment.booking
+                if not booking:
+                    return JsonResponse({
+                        "error": "Booking not linked to payment"
+                        }, status=400)
+
+                booking.booking_status = "confirmed"
+                booking.payment_status = 'paid'
+                booking.save()
+    
+
+                owner = booking.room.lodge.owner
+                owner_wallet, _ = Wallet.objects.get_or_create(user=owner)
+
+                commission_rate = Decimal("10.00")
+
+                owner_amount = payment.amount * (Decimal("1") - commission_rate / Decimal("100"))
+                company_amount = payment.amount * (commission_rate / Decimal("100"))
+                owner_before = owner_wallet.balance
+
+                owner_wallet.balance += owner_amount
+                owner_wallet.total_earnings += owner_amount
+                owner_wallet.save()
+
+                WalletTransaction.objects.create(
+                    wallet=owner_wallet,
+                    transaction_type="credit",
+                    source="booking_payment",
+                    amount=owner_amount,
+                    transaction_rate=commission_rate,
+                    balance_before=owner_before,
+                    balance_after=owner_wallet.balance,
+                    reference=payment.payment_reference,
+                    description=f"Booking #{booking.id}"
+                    )
+
             # --------------------------------
             # ORDER PAYMENT
             # --------------------------------
             elif payment.purpose == "order":
 
                 order = payment.order
+
+                # =====================================
+                # PRODUCT STOCK DEDUCTION
+                # =====================================
+                for item in order.items.select_related("product"):
+                    updated = Product.objects.filter(
+                        id=item.product.id,
+                        stock__gte=item.quantity
+                        ).update(
+                        stock=F("stock") - item.quantity
+                        )
+
+                    if updated == 0:
+                        raise Exception(f"Not enough stock for {item.product.name}")
 
                 order.status = "confirmed"
                 order.save()
@@ -342,6 +485,94 @@ def paychangu_webhook(request):
                     description=f"Commission from order {order.order_number}"
                 )
 
+
+            elif payment.purpose == "ticket":
+                ticket = payment.ticket_purchase
+
+                if not ticket:
+                    return JsonResponse({"error": "Ticket not linked to payment"}, status=400)
+                
+                # idempotency guards
+                if ticket.payment_status == "paid":
+                    return JsonResponse({"message": "Ticket already paid"})
+
+                if PaymentWebhook.objects.filter(payment=payment, processed=True).exists():
+                    return JsonResponse({"message": "Already processed"})
+
+                event = ticket.event
+                
+
+                 # =====================================
+                 # ATOMIC STOCK + PAYMENT FINALIZATION
+                 # =====================================
+
+                with transaction.atomic():
+                     # STEP 1: deduct stock
+                    for item in ticket.items.select_related("ticket_type"):
+
+                        updated = EventTicketType.objects.filter(
+                            id=item.ticket_type.id,
+                            available_seats__gte=item.quantity
+                            ).update(
+                            available_seats=F("available_seats") - item.quantity)
+
+                        if updated == 0:
+                            raise Exception(f"Not enough seats for {item.ticket_type.name}")
+                    
+
+                    # STEP 2: mark ticket paid ONLY AFTER success
+                    ticket.payment_status = "paid"
+                    ticket.save()
+
+                
+
+                # =====================================
+                # WALLET LOGIC (outside atomic block OK)
+                # =====================================
+                organizer = event.organizer
+                organizer_wallet, _ = Wallet.objects.get_or_create(user=organizer)
+
+
+                commission_rate = Decimal("10.00")
+                organizer_amount = payment.amount * (Decimal("1") - commission_rate / Decimal("100"))
+                company_amount = payment.amount * (commission_rate / Decimal("100"))
+
+                before_balance = organizer_wallet.balance
+                organizer_wallet.balance += organizer_amount
+                organizer_wallet.total_earnings += organizer_amount
+                organizer_wallet.save()
+
+
+                WalletTransaction.objects.create(
+                    wallet=organizer_wallet,
+                    transaction_type="credit",
+                    source="ticket_payment",
+                    amount=organizer_amount,
+                    transaction_rate=commission_rate,
+                    balance_before=before_balance,
+                    balance_after=organizer_wallet.balance,
+                    reference=payment.payment_reference,
+                    description=f"Ticket sale - {event.title}"
+                    )
+
+                company_before = company_wallet.balance
+                company_wallet.balance += company_amount
+                company_wallet.total_earnings += company_amount
+                company_wallet.save()
+
+
+                CompanyWalletTransaction.objects.create(
+                    wallet=company_wallet,
+                    transaction_type="credit",
+                    source="ticket_commission",
+                    amount=company_amount,
+                    transaction_rate=commission_rate,
+                    balance_before=company_before,
+                    balance_after=company_wallet.balance,
+                    reference=payment.payment_reference,
+                    description=f"Commission from ticket {event.title}"
+                    )
+
             # --------------------------------
             # WALLET TOPUP
             # --------------------------------
@@ -368,6 +599,7 @@ def paychangu_webhook(request):
                     description="Wallet Topup"
                 )
 
+
         # ===============================
         # PAYMENT FAILED
         # ===============================
@@ -391,15 +623,3 @@ def paychangu_webhook(request):
         return JsonResponse({
             "error": "Payment not found"
         }, status=404)
-
-# =========================
-# SIGNATURE VERIFY
-# =========================
-def verify_paychangu_signature(data):
-    api_key = settings.PAYCHANGU_API_KEY
-    signature = data.get('signature')
-
-    signature_string = f"{data.get('amount')}{data.get('currency')}{api_key}"
-    expected_signature = hashlib.sha256(signature_string.encode()).hexdigest()
-
-    return signature == expected_signature

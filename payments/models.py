@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import User
 from orders.models import Order
+from events.models import Ticket
 from realestate.models import Property
 
 class Payment(models.Model):
@@ -9,7 +10,10 @@ class Payment(models.Model):
     PAYMENT_PURPOSE_CHOICES = (
     ('order', 'Order Payment'),
     ('property_unlock', 'Property Unlock'),
-    ('wallet_topup', 'Wallet Topup'),)
+    ('wallet_topup', 'Wallet Topup'),
+    ('booking','booking'),
+    ('ticket', 'ticket'),
+    )
 
 
     PAYMENT_STATUS_CHOICES = (
@@ -32,6 +36,8 @@ class Payment(models.Model):
     # Generic relations
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='payment', null=True, blank=True)
     property_unlock = models.ForeignKey('realestate.PropertyUnlock', on_delete=models.CASCADE, related_name='payment', null=True, blank=True)
+    booking = models.ForeignKey('hospitality.Booking',null=True,blank=True,on_delete=models.CASCADE)
+    ticket_purchase = models.ForeignKey('events.Ticket',null=True,blank=True,on_delete=models.SET_NULL)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)

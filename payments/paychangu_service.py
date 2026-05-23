@@ -8,7 +8,8 @@ class PayChanguService:
     """
 
     BASE_MOBILE_URL = "https://api.paychangu.com/mobile-money/payments/initialize"
-    BASE_CARD_URL = "https://api.paychangu.com/charge-card/payments"
+    #BASE_CARD_URL = "https://api.paychangu.com/charge-card/payments"
+    BASE_CARD_URL = "https://api.paychangu.com/hosted-payment-page"
 
     OPERATORS = {
         "airtel_money": {
@@ -76,11 +77,13 @@ class PayChanguService:
     def initiate_card_payment(self, payment, redirect_url=None):
 
         payload = {
-            "amount": float(payment.amount),
-            "currency": "MWK",
-            "email": payment.user.email,
-            "charge_id": payment.payment_reference,
-            "redirect_url": redirect_url,
+        "public_key":"PUB-TEST-WW4IESP3O5ngh9whOMlCEqz18Pos4wl2",
+        "amount": float(payment.amount),
+        "currency": "MWK",
+        "email": payment.user.email,
+        "tx_ref": payment.payment_reference,
+        "callback_url": redirect_url,
+        "return_url": redirect_url,
         }
 
         response = requests.post(
@@ -128,3 +131,4 @@ class PayChanguService:
             "status_code": response.status_code,
             "error": data
         }
+

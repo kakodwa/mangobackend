@@ -96,8 +96,21 @@ class BannerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Banner
-        fields = ['id', 'title', 'subtitle', 'image_url', 'url']  # 👈 added
+        fields = [
+            'id',
+            'title',
+            'subtitle',
+            'image_url',
+            'url',
+        ]
 
     def get_image_url(self, obj):
+
         request = self.context.get('request')
-        return request.build_absolute_uri(obj.image.url)
+
+        if obj.image:
+            return request.build_absolute_uri(
+                obj.image.url
+            )
+
+        return None

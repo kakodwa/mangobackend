@@ -100,4 +100,10 @@ class BookingSerializer(serializers.ModelSerializer):
             'total_nights',
             'subtotal',
             'total_amount',
+            'lodge', 
         )
+
+    def create(self, validated_data):
+        room = validated_data.get("room")
+        validated_data["lodge"] = room.lodge
+        return Booking.objects.create(**validated_data)
