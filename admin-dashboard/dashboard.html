@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Mango Marketplace</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/dashboard.css">
+</head>
+<body>
+  <!-- Login Modal (shown if not authenticated) -->
+  <div class="modal-overlay hidden" id="loginModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>Admin Login</h2>
+        <button class="modal-close" onclick="logout()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="dashboardLoginForm">
+          <div class="form-group">
+            <label for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" placeholder="admin@example.com" required>
+          </div>
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••" required>
+          </div>
+          <div class="form-group">
+            <label>
+              <input type="checkbox" id="rememberMe" checked> Remember me
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Login</button>
+          <div class="form-error mt-md" id="dashLoginError"></div>
+        </form>
+        <div style="text-align: center; margin-top: var(--spacing-lg); color: var(--text-secondary); font-size: 13px;">
+          Demo credentials: admin@mango.com / password123
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Dashboard Layout -->
+  <div class="dashboard-layout" id="dashboardLayout" style="display: none;">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">🥭</div>
+        <span>Mango Admin</span>
+      </div>
+
+      <nav>
+        <ul class="sidebar-nav">
+          <li class="nav-item">
+            <a href="#overview" class="nav-link active" data-section="overview">
+              <span class="nav-icon">📊</span>
+              <span>Overview</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#posts" class="nav-link" data-section="posts">
+              <span class="nav-icon">📝</span>
+              <span>Posts Management</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#users" class="nav-link" data-section="users">
+              <span class="nav-icon">👥</span>
+              <span>User Management</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#wallet" class="nav-link" data-section="wallet">
+              <span class="nav-icon">💰</span>
+              <span>Wallet & Transactions</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#settings" class="nav-link" data-section="settings">
+              <span class="nav-icon">⚙️</span>
+              <span>Settings</span>
+            </a>
+          </li>
+        </ul>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="admin-info">
+          <div class="admin-avatar" id="adminAvatar">A</div>
+          <div class="admin-details">
+            <h4 id="adminName">Admin User</h4>
+            <p id="adminEmail">admin@mango.com</p>
+          </div>
+        </div>
+        <button class="btn btn-danger btn-block" onclick="logout()">Logout</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Header -->
+      <header class="dashboard-header">
+        <h1 id="sectionTitle">Dashboard Overview</h1>
+        <div class="header-actions">
+          <span id="headerTime" style="color: var(--text-secondary); font-size: 13px;"></span>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="dashboard-content">
+        <!-- Overview Section -->
+        <section id="overviewSection" class="section active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Users</span>
+                <div class="stat-icon primary">👥</div>
+              </div>
+              <div class="stat-value" id="totalUsers">0</div>
+              <div class="stat-change positive">↑ 12% from last month</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Pending Posts</span>
+                <div class="stat-icon warning">⏳</div>
+              </div>
+              <div class="stat-value" id="pendingPosts">0</div>
+              <div class="stat-change">Awaiting approval</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Total Transactions</span>
+                <div class="stat-icon success">💳</div>
+              </div>
+              <div class="stat-value" id="totalTransactions">0</div>
+              <div class="stat-change positive">↑ 8% from last week</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span class="stat-label">Company Balance</span>
+                <div class="stat-icon secondary">💰</div>
+              </div>
+              <div class="stat-value" id="companyBalance">$0</div>
+              <div class="stat-change">Commission earned</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Recent Activity</h3>
+            </div>
+            <div class="card-body">
+              <div id="recentActivityList">
+                <p style="text-align: center; color: var(--text-secondary);">Loading activity...</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Posts Management Section -->
+        <section id="postsSection" class="section">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Post Approval Queue</h3>
+              <button class="btn btn-outline btn-small" onclick="refreshPosts()">🔄 Refresh</button>
+            </div>
+
+            <div class="filters-bar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search posts..." id="postSearch" onkeyup="filterPosts()">
+              </div>
+              <div class="filter-group">
+                <label for="statusFilter">Status:</label>
+                <select id="statusFilter" onchange="filterPosts()">
+                  <option value="">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Author</th>
+                      <th>Title</th>
+                      <th>Category</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="postsTable">
+                    <tr>
+                      <td colspan="7" style="text-align: center; padding: var(--spacing-lg);">
+                        <div class="empty-state">
+                          <p>No posts to display</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span class="pagination-info">Showing <span id="postsPageInfo">0-0 of 0</span></span>
+                <div class="pagination-controls">
+                  <button class="pagination-btn" onclick="previousPostsPage()">&larr; Previous</button>
+                  <select class="pagination-select" onchange="changePostsPageSize()">
+                    <option value="10">10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                  </select>
+                  <button class="pagination-btn" onclick="nextPostsPage()">Next &rarr;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Users Management Section -->
+        <section id="usersSection" class="section">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">User Management</h3>
+              <button class="btn btn-outline btn-small" onclick="refreshUsers()">🔄 Refresh</button>
+            </div>
+
+            <div class="filters-bar">
+              <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" placeholder="Search users..." id="userSearch" onkeyup="filterUsers()">
+              </div>
+              <div class="filter-group">
+                <label for="userStatusFilter">Status:</label>
+                <select id="userStatusFilter" onchange="filterUsers()">
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Phone</th>
+                      <th>Status</th>
+                      <th>Balance</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="usersTable">
+                    <tr>
+                      <td colspan="7" style="text-align: center; padding: var(--spacing-lg);">
+                        <div class="empty-state">
+                          <p>No users to display</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span class="pagination-info">Showing <span id="usersPageInfo">0-0 of 0</span></span>
+                <div class="pagination-controls">
+                  <button class="pagination-btn" onclick="previousUsersPage()">&larr; Previous</button>
+                  <select class="pagination-select" onchange="changeUsersPageSize()">
+                    <option value="10">10 per page</option>
+                    <option value="25">25 per page</option>
+                    <option value="50">50 per page</option>
+                  </select>
+                  <button class="pagination-btn" onclick="nextUsersPage()">Next &rarr;</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Wallet & Transactions Section -->
+        <section id="walletSection" class="section">
+          <!-- Company Wallet -->
+          <div class="wallet-summary">
+            <h2>Company Wallet</h2>
+            <div class="wallet-grid">
+              <div class="wallet-item">
+                <h4>Total Balance</h4>
+                <div class="wallet-value" id="walletBalance">$0.00</div>
+              </div>
+              <div class="wallet-item">
+                <h4>Monthly Revenue</h4>
+                <div class="wallet-value" id="monthlyRevenue">$0.00</div>
+              </div>
+              <div class="wallet-item">
+                <h4>Total Transactions</h4>
+                <div class="wallet-value" id="walletTotalTx">0</div>
+              </div>
+              <div class="wallet-item">
+                <h4>Pending Withdrawals</h4>
+                <div class="wallet-value" id="pendingWithdrawals">0</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="card">
+            <div class="tabs" style="margin-bottom: var(--spacing-lg); background-color: var(--surface); margin: -var(--spacing-lg) -var(--spacing-lg) var(--spacing-lg) -var(--spacing-lg); border-radius: 0;">
+              <button class="tab active" onclick="switchTab('transactions', this)">Transactions</button>
+              <button class="tab" onclick="switchTab('withdrawals', this)">Pending Withdrawals</button>
+              <button class="tab" onclick="switchTab('commission', this)">Commission Settings</button>
+            </div>
+
+            <!-- Transactions Tab -->
+            <div id="transactionsTab" class="tab-content active">
+              <div style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                <button class="btn btn-secondary" onclick="exportTransactions()">📥 Export as CSV</button>
+                <button class="btn btn-outline" onclick="refreshTransactions()">🔄 Refresh</button>
+              </div>
+
+              <div class="filters-bar">
+                <div class="search-box">
+                  <span class="search-icon">🔍</span>
+                  <input type="text" placeholder="Search transactions..." id="txSearch" onkeyup="filterTransactions()">
+                </div>
+                <div class="filter-group">
+                  <label for="txTypeFilter">Type:</label>
+                  <select id="txTypeFilter" onchange="filterTransactions()">
+                    <option value="">All</option>
+                    <option value="payment">Payment</option>
+                    <option value="commission">Commission</option>
+                    <option value="withdrawal">Withdrawal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Date</th>
+                        <th>User</th>
+                        <th>Amount</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="transactionsTable">
+                      <tr>
+                        <td colspan="6" style="text-align: center; padding: var(--spacing-lg);">
+                          <div class="empty-state">
+                            <p>No transactions to display</p>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="pagination">
+                  <span class="pagination-info">Showing <span id="txPageInfo">0-0 of 0</span></span>
+                  <div class="pagination-controls">
+                    <button class="pagination-btn" onclick="previousTxPage()">&larr; Previous</button>
+                    <select class="pagination-select" onchange="changeTxPageSize()">
+                      <option value="10">10 per page</option>
+                      <option value="25">25 per page</option>
+                      <option value="50">50 per page</option>
+                    </select>
+                    <button class="pagination-btn" onclick="nextTxPage()">Next &rarr;</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Withdrawals Tab -->
+            <div id="withdrawalsTab" class="tab-content">
+              <div class="table-container">
+                <div class="table-wrapper">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Amount</th>
+                        <th>Requested</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="withdrawalsTable">
+                      <tr>
+                        <td colspan="6" style="text-align: center; padding: var(--spacing-lg);">
+                          <div class="empty-state">
+                            <p>No pending withdrawals</p>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Commission Settings Tab -->
+            <div id="commissionTab" class="tab-content">
+              <div class="form-section">
+                <h3>Commission Rates</h3>
+                <p style="color: var(--text-secondary); margin-bottom: var(--spacing-lg);">Set commission percentages for different transaction types</p>
+                
+                <div class="commission-table">
+                  <div class="commission-row">
+                    <div style="font-weight: 600;">Transaction Type</div>
+                    <div style="font-weight: 600;">Current Rate</div>
+                    <div style="font-weight: 600;">New Rate</div>
+                  </div>
+                  <div class="commission-row">
+                    <label>Product Sales Commission</label>
+                    <input type="number" id="productRate" value="5" readonly style="background-color: #f5f5f5;">
+                    <input type="number" class="commission-input" id="newProductRate" min="0" max="100" step="0.1" placeholder="%">
+                  </div>
+                  <div class="commission-row">
+                    <label>Service Commission</label>
+                    <input type="number" id="serviceRate" value="8" readonly style="background-color: #f5f5f5;">
+                    <input type="number" class="commission-input" id="newServiceRate" min="0" max="100" step="0.1" placeholder="%">
+                  </div>
+                  <div class="commission-row">
+                    <label>Subscription Fee</label>
+                    <input type="number" id="subscriptionRate" value="10" readonly style="background-color: #f5f5f5;">
+                    <input type="number" class="commission-input" id="newSubscriptionRate" min="0" max="100" step="0.1" placeholder="%">
+                  </div>
+                </div>
+
+                <div class="form-actions">
+                  <button class="btn btn-outline" onclick="resetCommissionRates()">Reset</button>
+                  <button class="btn btn-primary" onclick="saveCommissionRates()">Save Changes</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Settings Section -->
+        <section id="settingsSection" class="section">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">Admin Settings</h3>
+            </div>
+
+            <div class="form-section">
+              <h4>Profile Settings</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="settingsName">Full Name</label>
+                  <input type="text" id="settingsName" placeholder="Admin Name">
+                </div>
+                <div class="form-group">
+                  <label for="settingsEmail">Email</label>
+                  <input type="email" id="settingsEmail" placeholder="admin@example.com">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-outline">Cancel</button>
+                <button class="btn btn-primary" onclick="saveProfileSettings()">Save Profile</button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>Security Settings</h4>
+              <div class="form-group">
+                <label for="currentPassword">Current Password</label>
+                <input type="password" id="currentPassword" placeholder="••••••••">
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="newPassword">New Password</label>
+                  <input type="password" id="newPassword" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                  <label for="confirmPassword">Confirm Password</label>
+                  <input type="password" id="confirmPassword" placeholder="••••••••">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-outline">Cancel</button>
+                <button class="btn btn-primary" onclick="changePassword()">Change Password</button>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>App Settings</h4>
+              <div class="form-group">
+                <label for="appName">Application Name</label>
+                <input type="text" id="appName" value="Mango Marketplace">
+              </div>
+              <div class="form-group">
+                <label for="defaultCommission">Default Commission Rate (%)</label>
+                <input type="number" id="defaultCommission" min="0" max="100" step="0.1" value="5">
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-outline">Cancel</button>
+                <button class="btn btn-primary" onclick="saveAppSettings()">Save Settings</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Modals -->
+  <div class="modal-overlay hidden" id="postDetailModal">
+    <div class="modal detail-modal">
+      <div class="modal-header">
+        <h2>Post Details</h2>
+        <button class="modal-close" onclick="closeModal('postDetailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="postDetailContent"></div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="closeModal('postDetailModal')">Close</button>
+        <button class="btn btn-danger" id="rejectPostBtn" onclick="rejectPost()">Reject</button>
+        <button class="btn btn-success" id="approvePostBtn" onclick="approvePost()">Approve</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/main.js"></script>
+  <script src="js/api-client.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/dashboard.js"></script>
+</body>
+</html>
