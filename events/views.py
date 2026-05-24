@@ -326,9 +326,6 @@ class TicketValidationViewSet(viewsets.ViewSet):
 # =========================
 # QR CHECK-IN API
 # =========================
-# =========================
-# QR CHECK-IN API (UPDATED)
-# =========================
 class TicketCheckInAPIView(APIView):
     permission_classes = [IsAuthenticated]
 

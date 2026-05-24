@@ -315,6 +315,7 @@ class BookingAdmin(admin.ModelAdmin):
         ('Booking Information', {
             'fields': (
                 'booking_reference',
+                'qr_code',
                 'customer',
                 'lodge',
                 'room',

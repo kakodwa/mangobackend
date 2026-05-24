@@ -3,13 +3,15 @@ from datetime import timedelta
 from django.db.models import Q
 from rest_framework import viewsets, permissions, status
 from rest_framework.viewsets import ReadOnlyModelViewSet
+from django.core.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from datetime import timedelta
-
-from .utils import generate_booking_reference
+import json
+import random
+import string
 from .permissions import IsHospitalityOwner
-
+from django.core import signing
 
 from .models import Lodge, Room, Booking, Amenity
 from .serializers import (
@@ -18,6 +20,34 @@ from .serializers import (
     BookingSerializer,
     AmenitySerializer
 )
+
+
+from django.core.signing import (
+    TimestampSigner,
+    BadSignature,
+    SignatureExpired,
+)
+
+signer = TimestampSigner()
+
+def verify_booking_qr(token, max_age=86400):
+    try:
+        value = signer.unsign(token, max_age=max_age)
+        data = json.loads(value)
+        return data
+
+    except (BadSignature, SignatureExpired, json.JSONDecodeError):
+        return None
+
+
+def generate_booking_reference():
+
+    return 'BK-' + ''.join(
+        random.choices(
+            string.ascii_uppercase + string.digits,
+            k=8,
+        )
+    )
 
 
 class AmenityViewSet(ReadOnlyModelViewSet):
@@ -176,8 +206,8 @@ class RoomViewSet(viewsets.ModelViewSet):
         for booking in bookings:
             current = booking.check_in_date
 
-            while current < booking.check_out_date:
-                booked_dates.append(str(current))
+            while current <= booking.check_out_date:
+                booked_dates.append(current.strftime("%Y-%m-%d"))
                 current += timedelta(days=1)
 
         return Response({
@@ -190,7 +220,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Booking.objects.filter(customer=self.request.user)
+        user = self.request.user
+        if self.action in ["owner", "check_in", "scan_qr", "cancel_booking"]:
+            return Booking.objects.filter(lodge__owner=user)
+
+        return Booking.objects.filter(customer=user)
 
     def create(self, request, *args, **kwargs):
         
@@ -243,6 +277,59 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    def owner(self, request):
+        user = request.user
+
+        bookings = Booking.objects.filter(lodge__owner=user)
+
+        serializer = self.get_serializer(bookings, many=True)
+        print(serializer.data)
+        return Response(serializer.data)
+
+
+    @action(detail=False, methods=['post'])
+    def scan_qr(self, request):
+        qr_token = request.data.get("qr_data")
+
+        if not qr_token:
+            return Response({"error": "QR code required"}, status=400)
+
+        data = verify_booking_qr(qr_token)
+
+        if not data:
+            return Response({"error": "Invalid or expired QR code"}, status=400)
+
+        booking_id = data.get("booking_id")
+
+        try:
+            booking = Booking.objects.get(id=booking_id)
+        except Booking.DoesNotExist:
+            return Response({"error": "Booking not found"}, status=404)
+
+        booking.mark_checked_in(request.user)
+
+        return Response({
+            "message": "Check-in successful",
+            "booking_reference": booking.booking_reference,
+            "room_number": booking.room.room_number,
+            "booking_status": booking.booking_status,})
+
+    @action(detail=True, methods=['post'])
+    def check_in(self, request, pk=None):
+        try:
+            booking = self.get_object()
+
+            booking.mark_checked_in(request.user)
+            return Response({
+                "message": "Checked in successfully",
+                "status": booking.booking_status
+                })
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
     @action(detail=True, methods=['post'])
     def cancel_booking(self, request, pk=None):

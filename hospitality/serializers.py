@@ -89,18 +89,52 @@ class LodgeSerializer(serializers.ModelSerializer):
 
         return instance
 
-
 class BookingSerializer(serializers.ModelSerializer):
+    lodge_name = serializers.CharField(
+        source='lodge.name',
+        read_only=True
+    )
+
+    room_name = serializers.CharField(
+        source='room.title',
+        read_only=True
+    )
+
+    room_number = serializers.CharField(
+        source='room.room_number',
+        read_only=True
+    )
+
+    qr_code = serializers.ImageField(read_only=True)
+
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = [
+            'id',
+            'booking_reference',
+            'check_in_date',
+            'check_out_date',
+            'booking_status',
+            'payment_status',
+            'total_amount',
+            'total_nights',
+
+            'lodge_name',
+            'room_name',
+            'room_number',
+
+            'room',
+            'lodge',
+            'qr_code',
+        ]
+
         read_only_fields = (
             'customer',
             'booking_reference',
             'total_nights',
             'subtotal',
             'total_amount',
-            'lodge', 
+            'lodge',
         )
 
     def create(self, validated_data):

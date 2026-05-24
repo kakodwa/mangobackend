@@ -204,7 +204,7 @@ class Ticket(models.Model):
     def get_signed_qr_data(self):
         payload = {
             "ticket_number": str(self.ticket_number),
-            #"event_id": self.event.id,
+            "event_id": self.event.id,
             "event_title": self.event.title,
             "ticket_items": [
             {

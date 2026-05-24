@@ -142,11 +142,17 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response({
                 "latest_version": None,
                 "force_update": False,
+                "maintenance_mode": False,
+                "message": None,
                 "update_url": None
                 })
 
         return Response({
             "latest_version": version.version,
             "force_update": version.force_update,
+            "maintenance_mode": version.maintenance_mode,
+            "message": version.message,
             "update_url": version.update_url
             })
+
+ 
