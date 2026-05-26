@@ -3,17 +3,16 @@ from decouple import config, Csv
 import os
 from dotenv import load_dotenv
 import dj_database_url
+import cloudinary
 
 
-
-load_dotenv()
 
 
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv()
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -98,6 +97,16 @@ CORS_ALLOW_HEADERS = [
 ]
 
 
+
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUD_NAME"),
+    api_key=os.getenv("API_KEY"),
+    api_secret=os.getenv("API_SECRET"),
+    secure=True
+)
+
+
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 if DEBUG:
@@ -115,13 +124,6 @@ else:
             ssl_require=True
         )
     }
-
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUD_NAME'),
-    'API_KEY': os.getenv('API_KEY'),
-    'API_SECRET': os.getenv('API_SECRET'),
-}
 
 
 
@@ -255,5 +257,5 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
