@@ -6,10 +6,6 @@ import dj_database_url
 import cloudinary
 
 
-
-
-
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
@@ -21,7 +17,7 @@ load_dotenv()
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-zf3igyn14(!s4)$aofr7y@3#z#$@rh6q+365b&#qsronhn6e)f')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
@@ -111,7 +107,6 @@ else:
         'default': dj_database_url.config(
             default=os.getenv("DATABASE_URL"),
             conn_max_age=600,
-            ssl_require=True
         )
     }
 
