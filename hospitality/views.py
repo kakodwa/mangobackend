@@ -83,36 +83,20 @@ class LodgeViewSet(viewsets.ModelViewSet):
     # FULL CREATE DEBUG
     # =========================
     def create(self, request, *args, **kwargs):
-
-        print("\n🔥 ===== CREATE REQUEST DEBUG =====")
-        print("🔥 DATA:", request.data)
-        print("🔥 FILES:", request.FILES)
-        print("🔥 CONTENT TYPE:", request.content_type)
+        print("\n🔥 CREATE REQUEST DEBUG")
+        print("DATA:", request.data)
+        print("FILES:", request.FILES)
 
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
+            print("\n❌ SERIALIZER ERRORS:", serializer.errors)
 
-            print("\n❌ SERIALIZER ERRORS ❌")
-            print(serializer.errors)
-            print("❌ ==================\n")
-
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
-
-        print("\n✅ SERIALIZER VALID\n")
-
-        headers = self.get_success_headers(serializer.data)
-
-        return Response(
-            serializer.data,
-            status=status.HTTP_201_CREATED,
-            headers=headers
-        )
+        print("\n✅ CREATED SUCCESSFULLY")
+        return Response(serializer.data,status=status.HTTP_201_CREATED)
 
     # =========================
     # FULL UPDATE DEBUG
