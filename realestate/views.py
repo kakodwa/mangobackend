@@ -9,7 +9,7 @@ from payments.models import Payment
 
 
 class PropertyViewSet(viewsets.ModelViewSet):
-    queryset = Property.objects.filter(is_publicly_visible=True)
+    queryset = Property.objects.filter(is_publicly_visible=False)
     serializer_class = PropertySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
