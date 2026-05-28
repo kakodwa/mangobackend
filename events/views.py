@@ -40,7 +40,7 @@ class EventViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
 
         queryset = Event.objects.filter(
-            status='published'
+            status='draft'
         )
 
         # =========================
