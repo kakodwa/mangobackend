@@ -43,49 +43,76 @@ class LodgeSerializer(serializers.ModelSerializer):
     images = LodgeImageSerializer(many=True, read_only=True)
     rooms = RoomSerializer(many=True, read_only=True)
     reviews = ReviewSerializer(many=True, read_only=True)
+
     amenities = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Amenity.objects.all(),
         required=False
-        )
-    owner_id = serializers.IntegerField(source='owner.id', read_only=True)
+    )
+
+    owner_id = serializers.IntegerField(
+        source='owner.id',
+        read_only=True
+    )
 
     class Meta:
         model = Lodge
         fields = '__all__'
         read_only_fields = ['owner']
 
-
     def create(self, validated_data):
-        request = self.context.get("request")
-        images_data = request.FILES.getlist("images") if request else []
 
+        request = self.context.get("request")
+
+        images_data = (
+            request.FILES.getlist("images")
+            if request else []
+        )
 
         amenities = validated_data.pop("amenities", [])
+
         lodge = Lodge.objects.create(**validated_data)
 
-
+        # Save uploaded images
         for img in images_data:
             LodgeImage.objects.create(
                 lodge=lodge,
                 image=img
-                )
+            )
 
+        # Save amenities
         if amenities:
             lodge.amenities.set(amenities)
 
         return lodge
 
     def update(self, instance, validated_data):
+
+        request = self.context.get("request")
+
+        images_data = (
+            request.FILES.getlist("images")
+            if request else []
+        )
+
         amenities = validated_data.pop("amenities", None)
 
+        # Update normal fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
         instance.save()
 
+        # Update amenities
         if amenities is not None:
             instance.amenities.set(amenities)
+
+        # Optional: add new uploaded images during update
+        for img in images_data:
+            LodgeImage.objects.create(
+                lodge=instance,
+                image=img
+            )
 
         return instance
 

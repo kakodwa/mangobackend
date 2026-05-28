@@ -21,11 +21,6 @@ class ShopViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'category']
     ordering_fields = ['rating', 'created_at', 'name']
 
-    '''def get_queryset(self):
-        if self.request.user.is_authenticated and self.request.user.user_type == 'shop_owner':
-            return Shop.objects.filter(owner=self.request.user)
-        return super().get_queryset()'''
-
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
             return ShopCreateUpdateSerializer

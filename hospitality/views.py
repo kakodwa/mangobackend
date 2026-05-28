@@ -56,21 +56,28 @@ class AmenityViewSet(ReadOnlyModelViewSet):
 
 
 class LodgeViewSet(viewsets.ModelViewSet):
-    #queryset = Lodge.objects.filter(is_active=True)
+    # queryset = Lodge.objects.filter(is_active=True)
     serializer_class = LodgeSerializer
 
     def get_queryset(self):
+
+        # Public users can only see active lodges
         if self.action in ['list', 'retrieve']:
             return Lodge.objects.filter(is_active=True)
 
+        # Authenticated users can only manage their own lodges
         return Lodge.objects.filter(
             owner=self.request.user
-            )
+        )
 
     def get_permissions(self):
+
+        # Anyone can view lodges
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
-        return [IsHospitalityOwner()]
+
+        # Any authenticated user can create/update/delete
+        return [permissions.IsAuthenticated()]
 
     # =========================
     # FULL CREATE DEBUG
@@ -106,66 +113,96 @@ class LodgeViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
             headers=headers
         )
+
+    # =========================
+    # FULL UPDATE DEBUG
+    # =========================
     def update(self, request, *args, **kwargs):
+
         print("\n🔥 ===== UPDATE REQUEST DEBUG =====")
         print("DATA:", request.data)
         print("FILES:", request.FILES)
         print("CONTENT TYPE:", request.content_type)
 
         partial = kwargs.pop('partial', False)
+
+        # Only owner can update because of get_queryset()
         instance = self.get_object()
 
         serializer = self.get_serializer(
             instance,
             data=request.data,
             partial=partial
-            )
+        )
 
         if not serializer.is_valid():
+
             print("\n❌ UPDATE ERRORS ❌")
             print(serializer.errors)
 
             return Response(
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
-                )
+            )
+
         serializer.save()
+
         print("✅ LODGE UPDATED:", instance.id)
-        return Response(serializer.data,status=status.HTTP_200_OK)
 
-
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
 
     def perform_create(self, serializer):
+
         user = self.request.user
 
         print("\n🔥 ===== LODGE CREATE DEBUG =====")
         print("🔥 USER:", user)
-        print("🔥 USER TYPE:", user.user_type)
+        print("🔥 USER TYPE:", getattr(user, "user_type", None))
 
         lodge = serializer.save(owner=user)
 
         print("✅ CREATED:", lodge.id)
 
-
-    @action(detail=False, methods=['get'], permission_classes=[IsHospitalityOwner])
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
     def my_lodges(self, request):
+
         try:
             print("=== MY LODGES DEBUG START ===")
             print("User:", request.user)
             print("Authenticated:", request.user.is_authenticated)
 
-            lodges = Lodge.objects.filter(owner=request.user).order_by('-created_at')
+            lodges = Lodge.objects.filter(
+                owner=request.user
+            ).order_by('-created_at')
+
             print("Lodges found:", lodges.count())
 
-            serializer = self.get_serializer(lodges, many=True, context={"request": request})
+            serializer = self.get_serializer(
+                lodges,
+                many=True,
+                context={"request": request}
+            )
+
             print("Serialization successful")
             print("=== MY LODGES DEBUG END ===")
-            return Response(serializer.data)
-        except Exception as e:
-            print("Error:", str(e))
-           
 
-        return Response({"detail": "Failed to load lodges"}, status=500)
+            return Response(serializer.data)
+
+        except Exception as e:
+
+            print("Error:", str(e))
+
+        return Response(
+            {"detail": "Failed to load lodges"},
+            status=500
+        )
 
 
 class RoomViewSet(viewsets.ModelViewSet):
