@@ -194,9 +194,9 @@ class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve','availability']:
+        if self.action in ['list', 'retrieve', 'availability']:
             return [permissions.AllowAny()]
-        return [IsHospitalityOwner()]
+        return [permissions.IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
 

@@ -20,9 +20,23 @@ class UserViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def register(self, request):
+
+        print("\n🔥 RAW REQUEST DATA:")
+        print(request.data)
+
         serializer = UserRegisterSerializer(data=request.data)
+
         if serializer.is_valid():
+
+            print("\n✅ VALIDATED DATA:")
+            print(serializer.validated_data)
+
             user = serializer.save()
+
+            print("\n👤 SAVED USER PHONE:")
+            print(user.phone_number)
+
+
             refresh = RefreshToken.for_user(user)
             return Response({
                 'user': UserSerializer(user).data,

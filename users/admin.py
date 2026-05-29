@@ -27,7 +27,6 @@ class CustomUserAdmin(UserAdmin):
         "user_type",
         "is_verified",
         "is_active",
-        "date_joined",
     )
 
     ordering = ("-date_joined",)
@@ -38,17 +37,35 @@ class CustomUserAdmin(UserAdmin):
         "user_type",
     )
 
-    fieldsets = UserAdmin.fieldsets + (
-        ("Extra Info", {
-            "fields": (
-                "phone_number",
-                "user_type",
-                "profile_picture",
-                "bio",
-                "is_verified",
-            )
-        }),
-    )
+    fieldsets = (
+    (None, {
+        "fields": ("username", "password")
+    }),
+    ("Personal Info", {
+        "fields": (
+            "first_name",
+            "last_name",
+            "email",
+            "phone_number",
+            "profile_picture",
+            "bio",
+            "user_type",
+            "is_verified",
+        )
+    }),
+    ("Permissions", {
+        "fields": (
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "groups",
+            "user_permissions",
+        )
+    }),
+    ("Important dates", {
+        "fields": ("last_login",)  # ❌ ONLY this
+    }),
+)
 
 
 @admin.register(Address)

@@ -13,12 +13,12 @@ class User(AbstractUser):
     )
 
     phone_regex = RegexValidator(
-        regex=r'^\+?1?\d{9,15}$',
-        message='Phone number must be entered in the format: +265xxxxxxxxx or 0xxxxxxxxx'
-    )
+        regex=r'^\+?[1-9]\d{7,14}$',
+        message='Enter a valid international phone number (e.g. +265881234567)'
+        )
 
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(validators=[phone_regex], max_length=17, blank=True)
+    phone_number = models.CharField(max_length=17, blank=True)
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='customer')
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
     bio = models.TextField(blank=True)
