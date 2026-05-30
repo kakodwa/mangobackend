@@ -106,7 +106,7 @@ class Favorite(models.Model):
 
 # models.py
 class Banner(models.Model):
-    title = models.CharField(max_length=255)
+    title = models.CharField(max_length=255,blank=True, null=True)
     subtitle = models.CharField(max_length=255, blank=True)
     image = models.ImageField(upload_to='banners/')
     url = models.URLField(blank=True, null=True)  # 👈 NEW FIELD
