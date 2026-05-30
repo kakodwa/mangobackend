@@ -60,9 +60,18 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} - {self.shop.name}"
 
+    
+
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+
+            while Product.objects.filter(shop=self.shop, slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
 
         if not self.sku:
             self.sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
