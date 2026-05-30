@@ -9,6 +9,9 @@ class CustomUserAdmin(UserAdmin):
         "username",
         "email",
         "phone_number",
+        "district",
+        "gender",
+        "date_of_birth",
         "user_type",
         "is_verified",
         "is_active",
@@ -21,10 +24,13 @@ class CustomUserAdmin(UserAdmin):
         "last_name",
         "email",
         "phone_number",
+        "district",
     )
 
     list_filter = (
         "user_type",
+        "gender",
+        "district",
         "is_verified",
         "is_active",
     )
@@ -38,34 +44,54 @@ class CustomUserAdmin(UserAdmin):
     )
 
     fieldsets = (
-    (None, {
-        "fields": ("username", "password")
-    }),
-    ("Personal Info", {
-        "fields": (
-            "first_name",
-            "last_name",
-            "email",
-            "phone_number",
-            "profile_picture",
-            "bio",
-            "user_type",
-            "is_verified",
-        )
-    }),
-    ("Permissions", {
-        "fields": (
-            "is_active",
-            "is_staff",
-            "is_superuser",
-            "groups",
-            "user_permissions",
-        )
-    }),
-    ("Important dates", {
-        "fields": ("last_login",)  # ❌ ONLY this
-    }),
-)
+        (None, {
+            "fields": (
+                "username",
+                "password",
+            )
+        }),
+
+        ("Personal Info", {
+            "fields": (
+                "first_name",
+                "last_name",
+                "email",
+                "phone_number",
+
+                "district",
+                "gender",
+                "date_of_birth",
+
+                "profile_picture",
+                "bio",
+
+                "user_type",
+                "is_verified",
+            )
+        }),
+
+        ("Permissions", {
+            "fields": (
+                "is_active",
+                "is_staff",
+                "is_superuser",
+                "groups",
+                "user_permissions",
+            )
+        }),
+
+        ("Important dates", {
+            "fields": (
+                "last_login",
+                "date_joined",
+            )
+        }),
+    )
+
+    readonly_fields = (
+        "date_joined",
+        "last_login",
+    )
 
 
 @admin.register(Address)

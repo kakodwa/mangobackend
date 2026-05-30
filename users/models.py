@@ -15,15 +15,54 @@ class User(AbstractUser):
     phone_regex = RegexValidator(
         regex=r'^\+?[1-9]\d{7,14}$',
         message='Enter a valid international phone number (e.g. +265881234567)'
-        )
+    )
 
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=17, blank=True)
-    user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='customer')
-    profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True)
+
+    phone_number = models.CharField(
+        max_length=17,
+        blank=True,
+        validators=[phone_regex]
+    )
+
+    user_type = models.CharField(
+        max_length=20,
+        choices=USER_TYPE_CHOICES,
+        default='customer'
+    )
+
+    profile_picture = models.ImageField(
+        upload_to='profile_pictures/',
+        null=True,
+        blank=True
+    )
+
     bio = models.TextField(blank=True)
+
+    # ======================
+    # NEW SIMPLE FIELDS
+    # ======================
+
+    gender = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+
+    date_of_birth = models.DateField(
+        null=True,
+        blank=True
+    )
+
+    district = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+
     date_joined = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

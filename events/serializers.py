@@ -54,6 +54,10 @@ class EventSerializer(serializers.ModelSerializer):
 
     images = EventImageSerializer(many=True, read_only=True)
     ticket_types = EventTicketTypeSerializer(many=True,read_only=True)
+    organizer_phone_number = serializers.CharField(
+        source='organizer.phone_number',
+        read_only=True
+    )
 
     class Meta:
         model = Event
@@ -65,6 +69,8 @@ class EventSerializer(serializers.ModelSerializer):
 
             'title',
             'description',
+
+            'organizer_phone_number'
 
             'venue',
             'district',

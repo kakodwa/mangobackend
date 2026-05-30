@@ -55,6 +55,12 @@ class LodgeSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    owner_phone_number = serializers.CharField(
+        source='owner.phone_number',
+        read_only=True
+    )
+
+
     class Meta:
         model = Lodge
         fields = '__all__'

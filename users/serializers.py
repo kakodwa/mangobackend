@@ -6,7 +6,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone_number', 
-                 'user_type', 'profile_picture', 'bio', 'is_verified', 'date_joined']
+                 'user_type', 'profile_picture', 'bio','date_of_birth' ,'district','gender','is_verified', 'date_joined']
         read_only_fields = ['id', 'date_joined']
 
 
@@ -40,6 +40,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             'phone_number',
             'user_type',
             'password',
+            'date_of_birth',
+            'district',
+            'gender',
         ]
 
     def create(self, validated_data):
@@ -51,8 +54,13 @@ class UserRegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data.get('last_name', ''),
             phone_number=validated_data.get('phone_number', ''),
             user_type=validated_data.get('user_type', 'customer'),
-        )
 
+            # NEW FIELDS
+            date_of_birth=validated_data.get('date_of_birth'),
+            district=validated_data.get('district'),
+            gender=validated_data.get('gender'),
+        )
+        
 class AddressSerializer(serializers.ModelSerializer):
     class Meta:
         model = Address

@@ -16,13 +16,17 @@ class PropertySerializer(serializers.ModelSerializer):
     images = PropertyImageSerializer(many=True, read_only=True)
     owner_name = serializers.CharField(source='owner.get_full_name', read_only=True)
     owner_id = serializers.ReadOnlyField(source='owner.id')
+    owner_phone_number = serializers.CharField(
+        source='owner.phone_number',
+        read_only=True
+    )
     is_unlocked = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
         fields = [
             'id', 'title', 'slug', 'description', 'property_type', 'status',
-            'latitude', 'longitude', 'address', 'city', 'district',
+            'latitude', 'longitude', 'address', 'city', 'district','owner_phone_number',
             'bedrooms', 'bathrooms', 'size_sqm', 'price', 'currency',
             'is_publicly_visible', 'unlock_fee', 'view_count','listing_purpose',
             'images', 'owner_id','owner_name', 'is_unlocked', 'created_at'
