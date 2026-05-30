@@ -63,7 +63,7 @@ class LodgeViewSet(viewsets.ModelViewSet):
 
         # Public users can only see active lodges
         if self.action in ['list', 'retrieve']:
-            return Lodge.objects.filter(is_active=True)
+            return Lodge.objects.filter(is_active=False)
 
         # Authenticated users can only manage their own lodges
         return Lodge.objects.filter(

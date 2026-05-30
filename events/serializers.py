@@ -70,7 +70,7 @@ class EventSerializer(serializers.ModelSerializer):
             'title',
             'description',
 
-            'organizer_phone_number'
+            'organizer_phone_number',
 
             'venue',
             'district',
