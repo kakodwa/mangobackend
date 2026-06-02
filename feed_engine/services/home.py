@@ -6,13 +6,13 @@ from ..selectors.products import get_products, get_trending
 from ..selectors.shops import get_featured
 from ..selectors.events import get_upcoming
 from ..selectors.properties import get_properties
-from ..selectors.lodges import get_featured_lodges
+from ..selectors.lodges import  get_lodges
 
 from products.serializers import ProductSerializer
 from shops.serializers import ShopSerializer
 from events.serializers import EventSerializer
 from realestate.serializers import PropertySerializer
-from lodges.serializers import LodgeSerializer
+from hospitality.serializers import LodgeSerializer
 
 
 class HomeFeedService(BaseFeedService):
@@ -92,7 +92,7 @@ class HomeFeedService(BaseFeedService):
         ).data
 
         featured_lodges = LodgeSerializer(
-            get_featured_lodges(),
+            get_lodges(),
             many=True,
             context={"request": request} if request else {}
         ).data

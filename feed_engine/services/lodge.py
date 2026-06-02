@@ -32,7 +32,7 @@ class LodgeFeedService(BaseFeedService):
 
         lodges_qs = self.paginate(
             get_lodges(),
-            last_id
+            last_id,
         )
 
         lodges = list(lodges_qs)
@@ -43,45 +43,62 @@ class LodgeFeedService(BaseFeedService):
                 "results": []
             }
 
-        next_cursor = Cursor.encode(lodges[-1].id)
+        next_cursor = Cursor.encode(
+            lodges[-1].id
+        )
 
         serialized_lodges = LodgeSerializer(
             lodges,
             many=True,
-            context=serializer_context
+            context=serializer_context,
         ).data
 
         feed = [
-            self.format_item("lodge", lodge)
+            self.format_item(
+                "lodge",
+                lodge,
+            )
             for lodge in serialized_lodges
         ]
 
         # =====================================
-        # HORIZONTAL PRODUCTS
+        # SECONDARY CONTENT
         # =====================================
 
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
 
         featured_shops = ShopSerializer(
             get_featured()[:10],
-             many=True,
-             context=serializer_context
-             ).data
+            many=True,
+            context=serializer_context,
+        ).data
+
         upcoming_events = EventSerializer(
             get_upcoming()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
 
         featured_properties = PropertySerializer(
             get_properties()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
+
+        # Exclude lodges already shown in feed
+        lodge_ids = [lodge.id for lodge in lodges]
+
+        recommended_lodges = LodgeSerializer(
+            get_lodges().exclude(
+                id__in=lodge_ids
+            )[:10],
+            many=True,
+            context=serializer_context,
+        ).data
 
         # =====================================
         # FEED INJECTION
@@ -90,8 +107,10 @@ class LodgeFeedService(BaseFeedService):
         feed = FeedInjector.inject(
             feed=feed,
             products=trending_products,
-            events=None,
-            shops=None
+            shops=featured_shops,
+            events=upcoming_events,
+            properties=featured_properties,
+            lodges=recommended_lodges,
         )
 
         # =====================================
@@ -100,5 +119,5 @@ class LodgeFeedService(BaseFeedService):
 
         return {
             "next_cursor": next_cursor,
-            "results": feed
+            "results": feed,
         }

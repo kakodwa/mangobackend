@@ -32,7 +32,7 @@ class EventFeedService(BaseFeedService):
 
         events_qs = self.paginate(
             get_events(),
-            last_id
+            last_id,
         )
 
         events = list(events_qs)
@@ -43,64 +43,80 @@ class EventFeedService(BaseFeedService):
                 "results": []
             }
 
-        next_cursor = Cursor.encode(events[-1].id)
+        next_cursor = Cursor.encode(
+            events[-1].id
+        )
 
         serialized_events = EventSerializer(
             events,
             many=True,
-            context=serializer_context
+            context=serializer_context,
         ).data
 
         feed = [
-            self.format_item("event", event)
+            self.format_item(
+                "event",
+                event,
+            )
             for event in serialized_events
         ]
 
         # =====================================
-        # HORIZONTAL PRODUCTS
+        # SECONDARY CONTENT
         # =====================================
-        # =====================================
+
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
-            context=serializer_context).data
+            context=serializer_context,
+        ).data
 
         featured_shops = ShopSerializer(
             get_featured()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
 
         featured_properties = PropertySerializer(
             get_properties()[:10],
             many=True,
-            context=serializer_context).data
+            context=serializer_context,
+        ).data
 
         featured_lodges = LodgeSerializer(
             get_lodges()[:10],
             many=True,
-            context=serializer_context
-            ).data
-
-        # =====================================
-        # OPTIONAL EVENT BLOCKS
-        # =====================================
-
-        event_blocks = EventSerializer(
-            get_events()[:10],
-            many=True,
-            context=serializer_context
+            context=serializer_context,
         ).data
 
         # =====================================
-        # INJECT CONTENT
+        # RECOMMENDED EVENTS
+        # =====================================
+
+        event_ids = [
+            event.id
+            for event in events
+        ]
+
+        recommended_events = EventSerializer(
+            get_events().exclude(
+                id__in=event_ids
+            )[:10],
+            many=True,
+            context=serializer_context,
+        ).data
+
+        # =====================================
+        # FEED INJECTION
         # =====================================
 
         feed = FeedInjector.inject(
             feed=feed,
             products=trending_products,
-            events=event_blocks,
-            shops=None
+            shops=featured_shops,
+            events=recommended_events,
+            properties=featured_properties,
+            lodges=featured_lodges,
         )
 
         # =====================================
@@ -109,5 +125,5 @@ class EventFeedService(BaseFeedService):
 
         return {
             "next_cursor": next_cursor,
-            "results": feed
+            "results": feed,
         }

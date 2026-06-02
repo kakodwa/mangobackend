@@ -32,7 +32,7 @@ class ShopFeedService(BaseFeedService):
 
         shops_qs = self.paginate(
             get_shops(),
-            last_id
+            last_id,
         )
 
         shops = list(shops_qs)
@@ -43,16 +43,21 @@ class ShopFeedService(BaseFeedService):
                 "results": []
             }
 
-        next_cursor = Cursor.encode(shops[-1].id)
+        next_cursor = Cursor.encode(
+            shops[-1].id
+        )
 
         serialized_shops = ShopSerializer(
             shops,
             many=True,
-            context=serializer_context
+            context=serializer_context,
         ).data
 
         feed = [
-            self.format_item("shop", shop)
+            self.format_item(
+                "shop",
+                shop,
+            )
             for shop in serialized_shops
         ]
 
@@ -63,39 +68,54 @@ class ShopFeedService(BaseFeedService):
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
-            context=serializer_context
-            ).data
-        featured_shops = ShopSerializer(
-            get_featured()[:10],
-            many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
 
         upcoming_events = EventSerializer(
             get_upcoming()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
+
         featured_properties = PropertySerializer(
             get_properties()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
+
         featured_lodges = LodgeSerializer(
             get_lodges()[:10],
             many=True,
-            context=serializer_context
-            ).data
+            context=serializer_context,
+        ).data
+
+        # Avoid duplicating shops already
+        # displayed in the main feed
+
+        shop_ids = [
+            shop.id
+            for shop in shops
+        ]
+
+        featured_shops = ShopSerializer(
+            get_featured().exclude(
+                id__in=shop_ids
+            )[:10],
+            many=True,
+            context=serializer_context,
+        ).data
 
         # =====================================
-        # INJECT MIXED CONTENT
+        # FEED INJECTION
         # =====================================
 
         feed = FeedInjector.inject(
             feed=feed,
             products=trending_products,
+            shops=featured_shops,
             events=upcoming_events,
-            shops=featured_shops
+            properties=featured_properties,
+            lodges=featured_lodges,
         )
 
         # =====================================
@@ -104,5 +124,5 @@ class ShopFeedService(BaseFeedService):
 
         return {
             "next_cursor": next_cursor,
-            "results": feed
+            "results": feed,
         }
