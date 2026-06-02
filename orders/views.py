@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-
+from django.db.models import Q
 from .models import Order
 from .serializers import OrderSerializer, OrderCreateSerializer
 
@@ -15,13 +15,19 @@ class OrderViewSet(viewsets.ModelViewSet):
     filterset_fields = ['status']  #Removed shop
     ordering_fields = ['created_at', 'total_amount']
 
-    def get_queryset(self):
-        user = self.request.user
 
     def get_queryset(self):
         user = self.request.user
         return Order.objects.filter(customer=user)
-        
+
+
+    ''''def get_queryset(self):
+        user = self.request.user
+
+        return Order.objects.filter(
+            Q(customer=user) |
+            Q(items__product__shop__owner=user)).distinct().order_by('-id')'''
+
     def get_serializer_class(self):
         if self.action == 'create':
             return OrderCreateSerializer

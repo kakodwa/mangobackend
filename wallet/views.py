@@ -19,6 +19,9 @@ class WalletViewSet(viewsets.ViewSet):
     def transactions(self, request):
         """Get wallet transactions"""
         wallet, created = Wallet.objects.get_or_create(user=request.user)
+        print("Wallet Balance:", wallet.balance)
+        print("Wallet ID:", wallet.id)
+        print("User:", request.user.username)
         transactions = wallet.transactions.all()
         serializer = WalletTransactionSerializer(transactions, many=True)
         return Response(serializer.data)

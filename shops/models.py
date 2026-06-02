@@ -10,7 +10,7 @@ class Shop(models.Model):
         ('suspended', 'Suspended'),
     )
 
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shops', limit_choices_to={'user_type': 'shop_owner'})
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shops')
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(unique=True)
     description = models.TextField()

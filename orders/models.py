@@ -55,3 +55,26 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product.name} x {self.quantity}"
+
+
+class SellerOrder(models.Model):
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="seller_orders")
+    seller = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    commission = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("processing", "Processing"),
+            ("delivered", "Delivered"),
+            ("cancelled", "Cancelled"),
+        ],
+        default="pending"
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)

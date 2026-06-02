@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from decimal import Decimal, ROUND_HALF_UP
 from .models import Delivery, DeliveryPerson
+from payments.models import EscrowWallet
+from payments.serializers import EscrowWalletSerializer 
 from orders.models import OrderItem
 
 
@@ -53,13 +55,14 @@ class DeliveryPersonSerializer(serializers.ModelSerializer):
 # =========================
 # DELIVERY READ SERIALIZER
 # (USED BY FLUTTER SCREENS)
-# =========================
+
+
 class DeliverySerializer(serializers.ModelSerializer):
 
     delivery_person = DeliveryPersonSerializer(read_only=True)
     order_number = serializers.CharField(source="order.order_number", read_only=True)
-
-    # ⭐ ADD ORDER ITEMS FROM ORDER APP
+    customer_delivery_code = serializers.CharField(read_only=True)
+    escrow = serializers.SerializerMethodField()
     items = serializers.SerializerMethodField()
 
     class Meta:
@@ -67,7 +70,7 @@ class DeliverySerializer(serializers.ModelSerializer):
         fields = [
             'id',
             'order_number',
-            'items',  
+            'items',
             'delivery_code',
             'status',
             'delivery_person',
@@ -76,6 +79,8 @@ class DeliverySerializer(serializers.ModelSerializer):
             'customer_latitude',
             'customer_longitude',
             'delivery_address',
+            'escrow',
+            'customer_delivery_code',
             'delivery_phone_number',
             'created_at',
             'picked_up_at',
@@ -83,7 +88,25 @@ class DeliverySerializer(serializers.ModelSerializer):
         ]
 
     def get_items(self, obj):
-        return OrderItemSerializer(obj.order.items.all(), many=True).data
+        order = getattr(obj, "order", None)
+        if not order:
+            return []
+
+        return OrderItemSerializer(
+            order.items.filter(product__shop__owner=obj.seller),
+            many=True
+        ).data
+
+    def get_escrow(self, obj):
+        if not getattr(obj, "order", None):
+            return []
+
+        qs = EscrowWallet.objects.filter(payment__order=obj.order)
+
+        if getattr(obj, "seller", None):
+            qs = qs.filter(beneficiary=obj.seller)
+
+        return EscrowWalletSerializer(qs, many=True).data
 
 # =========================
 # ASSIGN DELIVERY PERSON

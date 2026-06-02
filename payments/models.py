@@ -59,3 +59,51 @@ class PaymentWebhook(models.Model):
 
     def __str__(self):
         return f"Webhook for {self.payment.payment_reference}"
+
+
+
+
+class EscrowWallet(models.Model):
+
+
+    payment = models.ForeignKey(
+        Payment,
+        on_delete=models.CASCADE,null=True, blank=True
+    )
+
+    beneficiary = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,null=True, blank=True
+    )
+
+    escrow_type = models.CharField(
+        max_length=30,
+        default='order',
+        choices=[
+            ("order", "Order"),
+            ("booking", "Booking"),
+            ("ticket", "Ticket"),
+            ("property_unlock", "Property Unlock"),
+        ]
+    )
+
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,null=True, blank=True
+    )
+
+    commission_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=10
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("held", "Held"),
+            ("released", "Released"),
+            ("refunded", "Refunded")
+        ],
+        default="held"
+    )

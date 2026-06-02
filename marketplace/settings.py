@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'delivery',
     'hospitality',
     'events',
+    'feed_engine',
 
     'cloudinary',
     'cloudinary_storage',

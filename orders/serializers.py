@@ -3,7 +3,71 @@ from .models import Order, OrderItem
 from decimal import Decimal, ROUND_HALF_UP
 from products.serializers import ProductSerializer
 from delivery.serializers import DeliverySerializer
+from orders.models import SellerOrder
+from payments.models import EscrowWallet
 
+
+class SellerOrderSerializer(serializers.ModelSerializer):
+
+    customer_paid = serializers.SerializerMethodField()
+    escrow_status = serializers.SerializerMethodField()
+    escrow_amount = serializers.SerializerMethodField()
+    seller_amount = serializers.SerializerMethodField()
+    commission = serializers.SerializerMethodField()
+    delivery_status = serializers.SerializerMethodField()
+    items = serializers.SerializerMethodField()   # ✅ ADD THIS
+
+    class Meta:
+        model = SellerOrder
+        fields = [
+            "id",
+            "order",
+            "seller",
+            "subtotal",
+            "customer_paid",
+            "escrow_status",
+            "escrow_amount",
+            "seller_amount",
+            "commission",
+            "delivery_status",
+            "items",   # ✅ IMPORTANT
+            "created_at",
+        ]
+
+    def get_items(self, obj):
+        items = obj.order.items.filter(product__shop__owner=obj.seller)
+
+        return [
+            {
+                "id": i.id,
+                "product_name": i.product.name,
+                "product_image": i.product.image.url if i.product.image else "",
+                "quantity": i.quantity,
+                "total_price": i.total_price,
+            }
+            for i in items
+        ]
+
+    def get_customer_paid(self, obj):
+        return obj.order.status != "pending"
+
+    def get_escrow_status(self, obj):
+        escrow = EscrowWallet.objects.filter(payment__order=obj.order,beneficiary=obj.seller).first()
+        return escrow.status if escrow else None
+
+    def get_escrow_amount(self, obj):
+        escrow = EscrowWallet.objects.filter(payment__order=obj.order,beneficiary=obj.seller).first()
+        return escrow.amount if escrow else Decimal("0.00")
+
+    def get_commission(self, obj):
+        return (obj.subtotal * Decimal("10")) / Decimal("100")
+
+    def get_seller_amount(self, obj):
+        return obj.subtotal - self.get_commission(obj)
+
+    def get_delivery_status(self, obj):
+        delivery = obj.order.deliveries.filter(seller=obj.seller).first()
+        return delivery.status if delivery else "pending"
 
 
 def round6(value):
@@ -39,6 +103,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
 
+    seller_orders = SellerOrderSerializer(many=True, read_only=True)  # ✅ ADD THIS
+
     customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)
     customer_id = serializers.IntegerField(source='customer.id', read_only=True)
 
@@ -63,6 +129,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'delivery',
 
             'items',
+            'seller_orders',   # ✅ MUST BE HERE
             'created_at'
         ]
 

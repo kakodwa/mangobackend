@@ -6,6 +6,8 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from django.core.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from payments.models import EscrowWallet
+from payments.services.settlement_service import SettlementService
 from datetime import timedelta
 import json
 import random
@@ -310,11 +312,14 @@ class BookingViewSet(viewsets.ModelViewSet):
         print(serializer.data)
         return Response(serializer.data)
 
-
+     
+    # ==========================================
+    # QR SCAN CHECK-IN
+    # ==========================================
     @action(detail=False, methods=['post'])
     def scan_qr(self, request):
-        qr_token = request.data.get("qr_data")
 
+        qr_token = request.data.get("qr_data")
         if not qr_token:
             return Response({"error": "QR code required"}, status=400)
 
@@ -325,30 +330,93 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         booking_id = data.get("booking_id")
 
+
         try:
             booking = Booking.objects.get(id=booking_id)
         except Booking.DoesNotExist:
             return Response({"error": "Booking not found"}, status=404)
 
-        booking.mark_checked_in(request.user)
+        # ==========================================
+        # SECURITY CHECK
+        # Only lodge owner can scan booking QR
+        # ==========================================
+        if booking.lodge.owner != request.user:
+            return Response({"error": "Not authorized"}, status=403)
 
-        return Response({
-            "message": "Check-in successful",
-            "booking_reference": booking.booking_reference,
-            "room_number": booking.room.room_number,
-            "booking_status": booking.booking_status,})
+        if booking.booking_status == "checked_in":
+            return Response({"error": "Guest already checked in"}, status=400)
 
+        try:
+            with transaction.atomic():
+                # ==========================================
+                # CHECK-IN GUEST
+                # ==========================================
+                booking.mark_checked_in(request.user)
+                # ==========================================
+                # RELEASE ESCROW
+                # ==========================================
+                try:
+                    escrow = EscrowWallet.objects.select_for_update().get(
+                        payment=booking.payment,
+                        escrow_type="booking",
+                        status="held"
+                        )
+
+                    SettlementService.release(escrow)
+                except EscrowWallet.DoesNotExist:
+                    pass
+
+            return Response({
+                "message": "Check-in successful",
+                "booking_reference": booking.booking_reference,
+                "room_number": booking.room.room_number,
+                "booking_status": booking.booking_status,})
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+    
+  
+    # ==========================================
+    # MANUAL CHECK-IN
+    # ==========================================
     @action(detail=True, methods=['post'])
     def check_in(self, request, pk=None):
+
         try:
             booking = self.get_object()
 
-            booking.mark_checked_in(request.user)
-            return Response({
-                "message": "Checked in successfully",
-                "status": booking.booking_status
-                })
 
+            if booking.lodge.owner != request.user:
+                return Response({"error": "Not authorized"}, status=403)
+
+
+            if booking.booking_status == "checked_in":return Response({
+                "error": "Guest already checked in"})
+
+             
+            # ==========================================
+            # SECURITY CHECK
+            # ==========================================
+            with transaction.atomic():
+                # ==========================================
+                # CHECK-IN GUEST
+                # ==========================================
+                booking.mark_checked_in(request.user)
+                # ==========================================
+                # RELEASE ESCROW
+                # ==========================================
+                try:
+                    escrow = EscrowWallet.objects.select_for_update().get(
+                        payment=booking.payment,
+                        escrow_type="booking",
+                        status="held")
+
+                    SettlementService.release(escrow)
+                except EscrowWallet.DoesNotExist:
+                    pass
+
+            return Response({"message": "Checked in successfully","status": booking.booking_status})
         except Exception as e:
             return Response({"error": str(e)}, status=400)
 

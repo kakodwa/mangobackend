@@ -3,9 +3,28 @@ from .models import Payment, PaymentWebhook
 from orders.models import Order
 from hospitality.models import Booking
 from realestate.models import PropertyUnlock
+from payments.models import EscrowWallet
 from events.models import Ticket
 import uuid
 
+
+
+class EscrowWalletSerializer(serializers.ModelSerializer):
+
+    seller_name = serializers.CharField(source="beneficiary.full_name", read_only=True)
+
+    class Meta:
+        model = EscrowWallet
+        fields = [
+            "id",
+            "payment",
+            "beneficiary",
+            "seller_name",
+            "amount",
+            "status",
+            "commission_rate",
+            "escrow_type",
+        ]
 
 # =====================================================
 # PAYMENT SERIALIZER

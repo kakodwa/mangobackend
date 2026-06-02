@@ -10,6 +10,8 @@ from django.utils import timezone
 
 import json
 from .models import Event, Ticket, TicketCheckIn, EventTicketType,TicketItem
+from payments.models import EscrowWallet
+from payments.services.settlement_service import SettlementService
 from .serializers import (
     EventSerializer,
     TicketSerializer,
@@ -331,6 +333,7 @@ class TicketCheckInAPIView(APIView):
 
     def post(self, request):
         try:
+
             # =========================
             # 1. GET QR CODE
             # =========================
@@ -342,14 +345,10 @@ class TicketCheckInAPIView(APIView):
                     "message": "QR code required",
                 }, status=400)
 
-            print("🔍 QR TOKEN:", qr_token)
-
             # =========================
             # 2. VERIFY QR TOKEN
             # =========================
             data = verify_qr_token(qr_token)
-
-            print("📦 DECODED DATA:", data)
 
             if not data:
                 return Response({
@@ -359,9 +358,6 @@ class TicketCheckInAPIView(APIView):
 
             ticket_number = data.get("ticket_number")
             event_id = data.get("event_id")
-
-            print("🎟 TICKET:", ticket_number)
-            print("🎫 EVENT:", event_id)
 
             if not ticket_number or not event_id:
                 return Response({
@@ -376,16 +372,16 @@ class TicketCheckInAPIView(APIView):
                 Ticket,
                 ticket_number=ticket_number,
                 event_id=event_id,
-                payment_status='paid',
-                event__status='published'
+                payment_status="paid",
+                event__status="published"
             )
 
-            # =========================
-            # 4. CHECK EVENT DATE
-            # =========================
             event = ticket.event
             today = timezone.now().date()
 
+            # =========================
+            # 4. EVENT DATE CHECK
+            # =========================
             if event.event_date > today:
                 return Response({
                     "status": "error",
@@ -410,17 +406,33 @@ class TicketCheckInAPIView(APIView):
                     "data": {
                         "ticket": ticket_number,
                         "event": event.title,
-                        "checked_in_at": str(checkin.checked_in_at) if checkin.checked_in_at else None
+                        "checked_in_at": str(checkin.checked_in_at)
                     }
                 }, status=400)
 
             # =========================
-            # 6. MARK CHECK-IN
+            # 6. ATOMIC CHECK-IN + ESCROW RELEASE
             # =========================
-            checkin.is_checked_in = True
-            checkin.checked_in_by = request.user
-            checkin.checked_in_at = timezone.now()
-            checkin.save()
+            with transaction.atomic():
+
+                # mark check-in
+                checkin.is_checked_in = True
+                checkin.checked_in_by = request.user
+                checkin.checked_in_at = timezone.now()
+                checkin.save()
+
+                # release escrow safely (LOCKED)
+                try:
+                    escrow = EscrowWallet.objects.select_for_update().get(
+                        payment=ticket.payment,
+                        escrow_type="ticket",
+                        status="held"
+                    )
+
+                    SettlementService.release(escrow)
+
+                except EscrowWallet.DoesNotExist:
+                    pass
 
             # =========================
             # 7. SUCCESS RESPONSE
@@ -430,15 +442,15 @@ class TicketCheckInAPIView(APIView):
                 "message": "Check-in successful",
 
                 "data": {
-                "ticket_number": data.get("ticket_number"),
-                "event_title": data.get("event_title"),
-                "attendee_name": data.get("attendee_name"),
-                "ticket_items": data.get("ticket_items", []),
-
-                "checked_in_at": str(checkin.checked_in_at),
-                "seat": ticket.seat_number,
-                "type": ticket.ticket_type.name if ticket.ticket_type else "Regular", }
-                })
+                    "ticket_number": ticket.ticket_number,
+                    "event_title": event.title,
+                    "attendee_name": data.get("attendee_name"),
+                    "ticket_items": data.get("ticket_items", []),
+                    "checked_in_at": str(checkin.checked_in_at),
+                    "seat": ticket.seat_number,
+                    "type": ticket.ticket_type.name if ticket.ticket_type else "Regular",
+                }
+            })
 
         except Exception as e:
             print("❌ CHECK-IN ERROR:", str(e))

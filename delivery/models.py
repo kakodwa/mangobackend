@@ -1,8 +1,7 @@
 from django.db import models
 from users.models import User
 from orders.models import Order
-
-from django.db import models
+from payments.models import EscrowWallet
 
 class DeliveryPerson(models.Model):
 
@@ -61,7 +60,8 @@ class Delivery(models.Model):
         ('failed', 'Failed'),
     )
 
-    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='delivery')
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='deliveries')
+    seller = models.ForeignKey(User, on_delete=models.CASCADE,null=True,blank=True)
     delivery_person = models.ForeignKey(DeliveryPerson, on_delete=models.SET_NULL, null=True, blank=True, related_name='deliveries')
     status = models.CharField(max_length=20, choices=DELIVERY_STATUS_CHOICES, default='pending')
     
@@ -76,6 +76,9 @@ class Delivery(models.Model):
     pickup_longitude = models.DecimalField(max_digits=9,decimal_places=6,null=True,blank=True)
     
     delivery_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    escrow_released = models.BooleanField(default=False)
+
+    customer_delivery_code = models.CharField(max_length=6,null=True,blank=True)
     
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
@@ -84,6 +87,10 @@ class Delivery(models.Model):
 
     def __str__(self):
         return f"Delivery for Order {self.order.order_number}"
+
+    @property
+    def escrow(self):
+        return EscrowWallet.objects.filter(order=self.order,seller=self.seller,status="held").first()
 
 
 class DeliveryRating(models.Model):

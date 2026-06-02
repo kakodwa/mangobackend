@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Payment, PaymentWebhook
+from .models import Payment, PaymentWebhook,EscrowWallet
+
+
+admin.site.register(EscrowWallet)
 
 
 @admin.register(Payment)
