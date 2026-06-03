@@ -6,4 +6,4 @@ def get_shops():
 
 
 def get_featured():
-    return Shop.objects.order_by("-rating")[:20]
+    return Shop.objects.order_by("-rating")

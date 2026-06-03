@@ -96,6 +96,23 @@ class Event(models.Model):
     def get_available_seats(self):
         return sum(t.available_seats for t in self.ticket_types.all())
 
+    @property
+    def regular_ticket_price(self):
+        ticket = self.ticket_types.filter(name='regular').first()
+        return ticket.price if ticket else 0
+
+    @property
+    def total_tickets(self):
+        return sum(ticket.total_seats for ticket in self.ticket_types.all())
+
+    @property
+    def tickets_remaining(self):
+        return sum(ticket.available_seats for ticket in self.ticket_types.all())
+
+    @property
+    def tickets_sold(self):
+        return self.total_tickets - self.tickets_remaining
+
 
 # =========================
 # TICKET TYPES (VIP / REGULAR / VVIP)

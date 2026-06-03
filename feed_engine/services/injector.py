@@ -4,6 +4,20 @@ import random
 class FeedInjector:
 
     @staticmethod
+    def horizontal_item(
+        item_type,
+        title,
+        view_all_type,
+        data,
+    ):
+        return {
+            "type": item_type,
+            "title": title,
+            "view_all_type": view_all_type,
+            "data": data[:10],
+        }
+
+    @staticmethod
     def inject(
         feed,
         products=None,
@@ -38,7 +52,7 @@ class FeedInjector:
             result.append(item)
             counter += 1
 
-            # inject after every 5 primary items
+            # inject after every item
             if counter % 1 != 0:
                 continue
 
@@ -54,34 +68,54 @@ class FeedInjector:
             block_type = random.choice(choices)
 
             if block_type == "products":
-                result.append({
-                    "type": "horizontal_products",
-                    "data": products[:10]
-                })
+                result.append(
+                    FeedInjector.horizontal_item(
+                        "horizontal_products",
+                        "Trending Products",
+                        "product",
+                        products,
+                    )
+                )
 
             elif block_type == "events":
-                result.append({
-                    "type": "horizontal_events",
-                    "data": events[:10]
-                })
+                result.append(
+                    FeedInjector.horizontal_item(
+                        "horizontal_events",
+                        "Upcoming Events",
+                        "event",
+                        events,
+                    )
+                )
 
             elif block_type == "shops":
-                result.append({
-                    "type": "horizontal_shops",
-                    "data": shops[:10]
-                })
+                result.append(
+                    FeedInjector.horizontal_item(
+                        "horizontal_shops",
+                        "Featured Shops",
+                        "shop",
+                        shops,
+                    )
+                )
 
             elif block_type == "properties":
-                result.append({
-                    "type": "horizontal_properties",
-                    "data": properties[:10]
-                })
+                result.append(
+                    FeedInjector.horizontal_item(
+                        "horizontal_properties",
+                        "Featured Properties",
+                        "property",
+                        properties,
+                    )
+                )
 
             elif block_type == "lodges":
-                result.append({
-                    "type": "horizontal_lodges",
-                    "data": lodges[:10]
-                })
+                result.append(
+                    FeedInjector.horizontal_item(
+                        "horizontal_lodges",
+                        "Recommended Lodges",
+                        "lodge",
+                        lodges,
+                    )
+                )
 
             last_block = block_type
 
