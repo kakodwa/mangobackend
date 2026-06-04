@@ -45,6 +45,7 @@ urlpatterns = [
     path('api/token/refresh/',TokenRefreshView.as_view(), name='token_refresh'),
     path('api/payments/webhook/paychangu/', paychangu_webhook, name='paychangu_webhook'),
     path("api/feed/", include("feed_engine.urls")),
+    path("api/analytics",include("analytics.urls")),
 
 ]
 

@@ -51,10 +51,11 @@ INSTALLED_APPS = [
     'hospitality',
     'events',
     'feed_engine',
+    'analytics',
 
     'cloudinary',
     'cloudinary_storage',
-    #'analytics',
+    
 ]
 
 MIDDLEWARE = [

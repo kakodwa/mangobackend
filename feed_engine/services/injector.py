@@ -53,7 +53,7 @@ class FeedInjector:
             counter += 1
 
             # inject after every item
-            if counter % 5 != 0:
+            if counter % 1 != 0:
                 continue
 
             choices = [
