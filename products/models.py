@@ -6,32 +6,13 @@ from shops.models import Shop
 
 class Product(models.Model):
 
-    CATEGORY_ELECTRONICS = 'Electronics'
-    CATEGORY_FASHION = 'Fashion'
-    CATEGORY_GROCERIES = 'Groceries'
-    CATEGORY_HOME = 'Home'
-    CATEGORY_BEAUTY = 'Beauty'
-
-    CATEGORY_CHOICES = [
-        (CATEGORY_ELECTRONICS, 'Electronics'),
-        (CATEGORY_FASHION, 'Fashion'),
-        (CATEGORY_GROCERIES, 'Groceries'),
-        (CATEGORY_HOME, 'Home'),
-        (CATEGORY_BEAUTY, 'Beauty'),
-    ]
-
-
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField(upload_to='product_images/')
 
-    category = models.CharField(
-        max_length=50,
-        choices=CATEGORY_CHOICES,
-        default=CATEGORY_ELECTRONICS
-    )
+    category = models.CharField(max_length=50,default='Fashion')
     
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
