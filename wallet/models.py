@@ -145,6 +145,10 @@ class WalletTransaction(models.Model):
         return f"{self.transaction_type.upper()} - {self.amount}"
 
 
+# models.py
+from django.db import models
+from users.models import User
+
 class Withdrawal(models.Model):
     WITHDRAWAL_STATUS_CHOICES = (
         ('pending', 'Pending'),
@@ -153,25 +157,28 @@ class Withdrawal(models.Model):
         ('rejected', 'Rejected'),
     )
 
+    PAYOUT_METHODS = (
+        ('mobile_money', 'Mobile Money'),
+        ('bank_transfer', 'Bank Transfer'),
+    )
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='withdrawals')
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=WITHDRAWAL_STATUS_CHOICES, default='pending')
+    payout_method = models.CharField(max_length=20, choices=PAYOUT_METHODS, default='mobile_money')
     
-    # Bank Details
+    # Flexible fields depending on payout_method
     account_holder_name = models.CharField(max_length=255)
-    bank_account_number = models.CharField(max_length=50)
-    bank_name = models.CharField(max_length=255)
-    bank_branch = models.CharField(max_length=255)
+    account_number = models.CharField(max_length=50, help_text="Bank Account or Mobile Number")
     
-    # Timestamps
+    # Bank Only Fields (Optional if mobile_money)
+    bank_name = models.CharField(max_length=255, blank=True, null=True)
+    bank_uuid = models.CharField(max_length=100, blank=True, null=True, help_text="PayChangu Bank UUID")
+    bank_branch = models.CharField(max_length=255, blank=True, null=True)
+    
     requested_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
-    
-    # Admin Notes
     rejection_reason = models.TextField(blank=True)
 
     class Meta:
         ordering = ['-requested_at']
-
-    def __str__(self):
-        return f"Withdrawal {self.id} - {self.amount} ({self.status})"

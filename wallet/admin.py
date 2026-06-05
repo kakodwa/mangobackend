@@ -59,31 +59,5 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     ordering = ("-created_at",)
 
 
-@admin.register(Withdrawal)
-class WithdrawalAdmin(admin.ModelAdmin):
-    list_display = (
-        "user",
-        "amount",
-        "status",
-        "bank_name",
-        "bank_account_number",
-        "requested_at",
-        "processed_at",
-    )
+admin.site.register(Withdrawal)
 
-    search_fields = (
-        "user__username",
-        "user__email",
-        "bank_account_number",
-        "account_holder_name",
-    )
-
-    list_filter = (
-        "status",
-        "bank_name",
-        "requested_at",
-    )
-
-    ordering = ("-requested_at",)
-
-    list_editable = ("status",)

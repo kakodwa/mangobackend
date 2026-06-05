@@ -139,9 +139,9 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 "first_name": request.user.first_name or request.user.username,
                 "last_name": request.user.last_name or "Customer",
                 "tx_ref": payment.payment_reference,
-                "return_url": "https://mangobackend-yayy.onrender.com/api/payments/webhook/paychangu/",
+                "return_url": "https://adb9-137-115-0-2.ngrok-free.app/api/payments/webhook/paychangu/",
                 "callback_url": (
-                    "https://mangobackend-yayy.onrender.com/api/payments/payment/return/"
+                    "https://adb9-137-115-0-2.ngrok-free.app/api/payments/payment/return/"
                     f"?tx_ref={payment.payment_reference}"
                     f"&amount={payment.amount}"
                     f"&status=completed"
@@ -307,59 +307,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 "message": "Payment not found"
                 }, status=404)
 
-
-
-def fulfill_payment(payment, gateway_payload, source_name=""):
-    """
-    A centralized, idempotent function to finalize successful payments
-    and trigger downstream business logic handlers.
-    """
-    if payment.status == "completed":
-        print(f"ℹ️ [Central Fulfillment] Payment {payment.payment_reference} already processed.")
-        return False
-
-    with transaction.atomic():
-        # 1. Flip database state to completed
-        payment.status = "completed"
-        payment.save()
-        print(f"✅ [Central Fulfillment] Payment {payment.payment_reference} marked completed via {source_name}.")
-
-        # 2. Initialize Company Wallet metrics
-        company_wallet, _ = CompanyWallet.objects.get_or_create(
-            name="Main Company Wallet"
-        )
-
-        # 3. Dynamic map structure for background app processors
-        HANDLERS = {
-            "order_payment": OrderService.process_order,
-            "order": OrderService.process_order,
-            "property_unlock": handle_property_unlock,
-            "booking": handle_booking,
-            "ticket": handle_ticket,
-            "wallet_topup": handle_wallet_topup,
-            "refund": RefundService.refund_order,
-        }
-
-        # 4. Fire the assigned backend action handler
-        handler = HANDLERS.get(payment.purpose)
-        if handler:
-            print(f"⚙️ [Central Fulfillment] Executing processor handler for: {payment.purpose}")
-            handler(payment, company_wallet)
-        else:
-            print(f"⚠️ [Central Fulfillment] Warning: No business handler registered for purpose: {payment.purpose}")
-
-        # 5. Record the webhook transaction history logs smoothly
-        PaymentWebhook.objects.create(
-            payment=payment,
-            webhook_data={
-                "source": f"central_fulfillment_{source_name}",
-                "raw_payload": gateway_payload
-            },
-            processed=True
-        )
-    return True
-
-
 def fulfill_withdrawal(charge_id, status_value, data):
     """
     Centralized utility function to finalize outbox withdrawals/cashouts
@@ -442,26 +389,73 @@ def fulfill_withdrawal(charge_id, status_value, data):
 
     return JsonResponse({"success": True, "message": "Withdrawal processed successfully."})
 
+    
 
-# =========================
-# WEBHOOK - USED ALOT BY VISA CARD
-# =========================
 def payment_return_view(request):
+    # 1. Grab parameters returned by PayChangu's redirect
     tx_ref = request.GET.get("tx_ref")
     status_value = request.GET.get("status", "pending").lower()
     amount = request.GET.get("amount", "")
 
     print(f"🔄 RETURN VIEW ACTIVATED FOR REF: {tx_ref} | STATUS: {status_value}")
 
+    # 2. Only process if we have a valid reference code and the gateway states it's successful
     if tx_ref and status_value in ["success", "completed"]:
         try:
+            # Look up the payment object by its unique generated token reference
             payment = Payment.objects.get(payment_reference=tx_ref)
-            print('Pass')
-            # Call our single shared function!
-            #fulfill_payment(payment, dict(request.GET), source_name="redirect_return_view")
-        except Payment.DoesNotExist:
-            print(f"❌ ERROR: Payment object reference '{tx_ref}' not found in database.")
+            
+            # Idempotency Check: Only process if it hasn't already been fulfilled
+            if payment.status == "pending":
+                # Wrap database execution in transaction atomic block to maintain system data safety
+                with transaction.atomic():
+                    # Update status to completed right here
+                    payment.status = "completed"
+                    payment.save()
+                    print(f"✅ DATABASE SUCCESS: Payment {tx_ref} marked completed inside return view.")
 
+                    # Fetch or build your company balance record tracking model
+                    company_wallet, _ = CompanyWallet.objects.get_or_create(
+                        name="Main Company Wallet"
+                    )
+
+                    # Map out your specialized fulfillments
+                    HANDLERS = {
+                        "order_payment": OrderService.process_order,
+                        "order": OrderService.process_order,
+                        "property_unlock": handle_property_unlock,
+                        "booking": handle_booking,
+                        "ticket": handle_ticket,
+                        "wallet_topup": handle_wallet_topup,
+                        "refund": RefundService.refund_order,
+                    }
+
+                    # Extract and execute the right function handler
+                    handler = HANDLERS.get(payment.purpose)
+                    if handler:
+                        print(f"⚙️ EXECUTING BUSINESS HANDLER FOR: {payment.purpose}")
+                        handler(payment, company_wallet)
+                    else:
+                        print(f"⚠️ WARNING: No business handler registered for purpose: {payment.purpose}")
+
+                    # Mimic the webhook's record logger to ensure history tables stay accurate
+                    PaymentWebhook.objects.create(
+                        payment=payment,
+                        webhook_data={
+                            "source": "payment_return_redirect_capture",
+                            "tx_ref": tx_ref,
+                            "status": status_value,
+                            "amount": amount
+                        },
+                        processed=True
+                    )
+            else:
+                print(f"ℹ️ INFO: Payment {tx_ref} was already completed previously.")
+
+        except Payment.DoesNotExist:
+            print(f"❌ ERROR: Payment object with reference '{tx_ref}' not found in database.")
+
+    # 3. Build context metrics and render your HTML page
     context = {
         "tx_ref": tx_ref,
         "status": "completed" if status_value in ["success", "completed"] else "failed",
@@ -469,8 +463,9 @@ def payment_return_view(request):
     }
     return render(request, "payments/payment_return.html", context)
 
+
 # =========================
-# WEBHOOK - USED BY MOBILE PA
+# WEBHOOK
 # =========================
 @csrf_exempt
 @api_view(["POST"])
@@ -478,40 +473,198 @@ def payment_return_view(request):
 def paychangu_webhook(request):
     data = request.data
     print("INCOMING WEBHOOK PAYLOAD:", data)
-
-    # Robust tracking ID extractor handles both Mobile Money (charge_id) and Visa (tx_ref)
-    charge_id = data.get("charge_id") or data.get("tx_ref") or data.get("data", {}).get("tx_ref") or ""
-    status_value = str(data.get("status", "")).lower()
-
-    if not status_value and isinstance(data.get("data"), dict):
-        status_value = str(data.get("data", {}).get("status", "")).lower()
+    charge_id = data.get("charge_id", "")
+    status_value = data.get("status", "").lower()
 
     # =================================================================
-    # 🔄 ROUTE 1: WITHDRAWAL / CASHOUT
+    # 🔄 ROUTE 1: DETECTED AS A WITHDRAWAL / CASHOUT
     # =================================================================
-    if str(charge_id).startswith("WD-"):
-        print(f"🔄 Processing Payout/Withdrawal reference: {charge_id}")
-        return fulfill_withdrawal(charge_id, status_value, data)
+    # Check if the charge_id contains our custom prefix "WD-"
+    if charge_id.startswith("WD-"):
+        try:
+            # Extract ID from "WD-MOB-14" or "WD-BNK-14"
+            withdrawal_id = charge_id.split('-')[-1]
+            withdrawal = Withdrawal.objects.get(id=withdrawal_id)
+        except (Withdrawal.DoesNotExist, ValueError):
+            return JsonResponse({"error": "Withdrawal tracking instance not found"}, status=404)
+
+        if withdrawal.status in ["processed", "rejected"]:
+            return JsonResponse({"message": "Withdrawal transaction already finalized."})
+
+        # --- FAILED PAYOUT ---
+        if status_value not in ["success", "completed"]:
+            with transaction.atomic():
+                wallet = Wallet.objects.select_for_update().get(user=withdrawal.user)
+                balance_before = wallet.balance
+                
+                # Refund the user's funds locally
+                wallet.balance += withdrawal.amount
+                wallet.total_withdrawn -= withdrawal.amount
+                wallet.save()
+                
+                # Create historical ledger record of the failure refund
+                WalletTransaction.objects.create(
+                    wallet=wallet,
+                    transaction_type='credit',
+                    source='refund',
+                    amount=withdrawal.amount,
+                    balance_before=balance_before,
+                    balance_after=wallet.balance,
+                    reference=f"REFUND-{charge_id}",
+                    description=f"Automated refund due to failed payout drop: {data.get('message', 'Gateway Error')}"
+                )
+                
+                withdrawal.status = 'rejected'
+                withdrawal.rejection_reason = data.get("message", "PayChangu system disbursement error.")
+                withdrawal.save()
+
+                WithdrawalWebhookLog.objects.create(
+                    withdrawal=withdrawal,
+                    webhook_data=data,
+                    processed=True
+                )
+            return JsonResponse({"success": False, "message": "Payout failed. Wallet refunded safely."})
+
+        # --- SUCCESSFUL PAYOUT ---
+        with transaction.atomic():
+            withdrawal.status = "processed"
+            withdrawal.processed_at = transaction.now() if hasattr(transaction, 'now') else None
+            withdrawal.save()
+
+            WalletTransaction.objects.filter(reference=f"WD-REQ-{withdrawal.id}").update(
+                description=f"Withdrawal completely cleared by PayChangu to {withdrawal.account_number}"
+            )
+
+            WithdrawalWebhookLog.objects.create(
+                withdrawal=withdrawal,
+                webhook_data=data,
+                processed=True
+            )
+        return JsonResponse({"success": True, "message": "Withdrawal processed successfully."})
+
+
     # =================================================================
-    # 💳 ROUTE 2: INCOMING PAYMENT / DEPOSIT
+    # 💳 ROUTE 2: DETECTED AS AN INCOMING PAYMENT / DEPOSIT
     # =================================================================
     else:
         try:
-            payment = Payment.objects.get(payment_reference=charge_id)
+            payment = Payment.objects.get(
+                payment_reference=charge_id
+            )
         except Payment.DoesNotExist:
-            return JsonResponse({"error": f"Payment reference context '{charge_id}' not found"}, status=404)
+            return JsonResponse({"error": "Payment tracking context not found"}, status=404)
 
         if payment.status == "completed":
-            return JsonResponse({"message": "Already processed natively"})
+            return JsonResponse({"message": "Already processed"})
 
         # --- FAILED PAYMENT ---
         if status_value not in ["success", "completed"]:
             payment.status = "failed"
             payment.save()
-            return JsonResponse({"success": False, "message": "Payment recorded as failed."})
+
+            PaymentWebhook.objects.create(
+                payment=payment,
+                webhook_data=data,
+                processed=True
+            )
+            return JsonResponse({"success": False})
 
         # --- SUCCESS PAYMENT ---
-        # Call the exact same single shared function!
-        fulfill_payment(payment, data, source_name="background_webhook")
+        with transaction.atomic():
+            payment.status = "completed"
+            payment.save()
 
-        return JsonResponse({"success": True, "message": "Webhook processed safely via central handler."})
+            company_wallet, _ = CompanyWallet.objects.get_or_create(
+                name="Main Company Wallet"
+            )
+
+            HANDLERS = {
+                "order": OrderService.process_order,
+                "property_unlock": handle_property_unlock,
+                "booking": handle_booking,
+                "ticket": handle_ticket,
+                "wallet_topup": handle_wallet_topup,
+                "refund": RefundService.refund_order,
+            }
+
+            handler = HANDLERS.get(payment.purpose)
+            if handler:
+                handler(payment, company_wallet)
+
+            PaymentWebhook.objects.create(
+                payment=payment,
+                webhook_data=data,
+                processed=True
+            )
+
+        return JsonResponse({"success": True})
+
+'''@csrf_exempt
+@api_view(["POST"])
+def paychangu_webhook(request):
+
+    data = request.data
+
+    try:
+        payment = Payment.objects.get(
+            payment_reference=data.get("charge_id")
+        )
+
+    except Payment.DoesNotExist:
+        return JsonResponse({"error": "Payment not found"}, status=404)
+
+    # -------------------------
+    # IDENTITY CHECK (IDEMPOTENCY)
+    # -------------------------
+    if payment.status == "completed":
+        return JsonResponse({"message": "Already processed"})
+
+    # -------------------------
+    # FAILED PAYMENT
+    # -------------------------
+    if data.get("status") not in ["success", "completed"]:
+        payment.status = "failed"
+        payment.save()
+
+        PaymentWebhook.objects.create(
+            payment=payment,
+            webhook_data=data,
+            processed=True
+        )
+
+        return JsonResponse({"success": False})
+
+    # -------------------------
+    # SUCCESS PAYMENT
+    # -------------------------
+    with transaction.atomic():
+
+        payment.status = "completed"
+        payment.save()
+
+        company_wallet, _ = CompanyWallet.objects.get_or_create(
+            name="Main Company Wallet"
+        )
+
+
+        HANDLERS = {
+            "order":OrderService.process_order,               # now escrow-based
+            "property_unlock": handle_property_unlock,
+            "booking": handle_booking,
+            "ticket": handle_ticket,
+            "wallet_topup": handle_wallet_topup,
+            "refund":RefundService.refund_order,
+        }
+
+        handler = HANDLERS.get(payment.purpose)
+
+        if handler:
+            handler(payment, company_wallet)
+
+        PaymentWebhook.objects.create(
+            payment=payment,
+            webhook_data=data,
+            processed=True
+        )
+
+    return JsonResponse({"success": True})'''

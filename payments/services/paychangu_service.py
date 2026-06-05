@@ -6,10 +6,15 @@ class PayChanguService:
     """
     Reusable PayChangu integration service
     """
-
-    BASE_MOBILE_URL = "https://api.paychangu.com/mobile-money/payments/initialize"
+    #Payment URL
     #BASE_CARD_URL = "https://api.paychangu.com/charge-card/payments"
+    BASE_MOBILE_URL = "https://api.paychangu.com/mobile-money/payments/initialize"
     BASE_CARD_URL = "https://api.paychangu.com/hosted-payment-page"
+
+    #PAYOUT URL
+    BASE_MOBILE_PAYOUT_URL = "https://api.paychangu.com/mobile-money/payouts/initialize"
+    BASE_BANK_PAYOUT_URL = "https://api.paychangu.com/direct-charge/payouts/initialize"
+
 
     OPERATORS = {
         "airtel_money": {
@@ -132,3 +137,39 @@ class PayChanguService:
             "error": data
         }
 
+
+    # =========================
+    # PAYCHANGU MOBILE MONEY DISBURSEMENT
+    # =========================
+    def send_mobile_payout(self, withdrawal):
+        phone_data = self._normalize_phone(withdrawal.account_number)
+        
+        payload = {
+            "mobile": phone_data["phone"],
+            "mobile_money_operator_ref_id": phone_data["operator_id"],
+            "amount": str(withdrawal.amount),
+            "charge_id": f"WD-MOB-{withdrawal.id}",
+            "email": withdrawal.user.email,
+            "first_name": withdrawal.user.first_name,
+            "last_name": withdrawal.user.last_name,
+        }
+        
+        response = requests.post(self.BASE_MOBILE_PAYOUT_URL, json=payload, headers=self._headers())
+        return response.json()
+
+    # =========================
+    # PAYCHANGU BANK DISBURSEMENT
+    # =========================
+    def send_bank_payout(self, withdrawal):
+        payload = {
+            "payout_method": "bank_transfer",
+            "bank_uuid": withdrawal.bank_uuid, 
+            "amount": str(withdrawal.amount),
+            "charge_id": f"WD-BNK-{withdrawal.id}",
+            "bank_account_name": withdrawal.account_holder_name,
+            "bank_account_number": withdrawal.account_number,
+            "email": withdrawal.user.email,
+        }
+        
+        response = requests.post(self.BASE_BANK_PAYOUT_URL, json=payload, headers=self._headers())
+        return response.json()

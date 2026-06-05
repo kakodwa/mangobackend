@@ -5,6 +5,12 @@ from rest_framework import status
 from django.db.models import Count
 from .models import AppEvent
 
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from rembg import remove
+import io
+
+
 
 class LogEventView(APIView):
     def post(self, request):
@@ -44,3 +50,25 @@ class GetStatsView(APIView):
             "devices": device_stats,
             "clicks": click_stats
         }, status=status.HTTP_200_OK)
+
+
+
+@csrf_exempt  # Exempting for testing; use proper auth/tokens in production!
+def remove_product_background(request):
+    if request.method == 'POST' and request.FILES.get('image'):
+        try:
+            # 1. Read the uploaded image from Flutter into memory
+            uploaded_file = request.FILES['image']
+            input_data = uploaded_file.read()
+            
+            # 2. Process image through the AI engine
+            # rembg outputs raw bytes of a transparent PNG
+            output_data = remove(input_data)
+            
+            # 3. Return the processed transparent image directly to Flutter
+            return HttpResponse(output_data, content_type="image/png")
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+            
+    return JsonResponse({'error': 'Invalid request. Please POST an image.'}, status=400)
