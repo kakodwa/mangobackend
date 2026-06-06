@@ -1,0 +1,450 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rooms Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>MarketHub</h2>
+                <p>Admin Panel</p>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item">Dashboard</a>
+                <a href="users.html" class="nav-item">Users</a>
+                <a href="shops.html" class="nav-item">Shops</a>
+                <a href="products.html" class="nav-item">Products</a>
+                <a href="properties.html" class="nav-item">Properties</a>
+                <a href="deliveries.html" class="nav-item">Deliveries</a>
+                <a href="reviews.html" class="nav-item">Reviews</a>
+                <a href="lodges.html" class="nav-item">Lodges</a>
+                <a href="rooms.html" class="nav-item active">Rooms</a>
+                <a href="bookings.html" class="nav-item">Bookings</a>
+                <a href="events.html" class="nav-item">Events</a>
+                <a href="tickets.html" class="nav-item">Tickets</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Rooms Management</h1>
+                <div class="header-actions">
+                    <input type="text" id="searchRoom" placeholder="Search rooms..." class="search-bar">
+                    <button class="btn-primary" onclick="openAddRoomModal()">+ Add Room</button>
+                </div>
+            </header>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <select id="filterRoomType" onchange="filterRooms()">
+                    <option value="">All Room Types</option>
+                    <option value="single">Single</option>
+                    <option value="double">Double</option>
+                    <option value="suite">Suite</option>
+                    <option value="family">Family</option>
+                    <option value="deluxe">Deluxe</option>
+                </select>
+                <select id="filterAvailability" onchange="filterRooms()">
+                    <option value="">All</option>
+                    <option value="available">Available</option>
+                    <option value="unavailable">Unavailable</option>
+                </select>
+                <select id="filterLodge" onchange="filterRooms()">
+                    <option value="">All Lodges</option>
+                    <option value="sunset">Sunset Paradise Hotel</option>
+                    <option value="mountain">Mountain Lodge Resort</option>
+                    <option value="urban">Urban Apartments</option>
+                </select>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRooms">0</div>
+                    <div class="stat-label">Total Rooms</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="availableRooms">0</div>
+                    <div class="stat-label">Available</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="bookedRooms">0</div>
+                    <div class="stat-label">Booked</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgPrice">KES 0</div>
+                    <div class="stat-label">Avg Price</div>
+                </div>
+            </div>
+
+            <!-- Rooms Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Room Number</th>
+                            <th>Lodge</th>
+                            <th>Type</th>
+                            <th>Title</th>
+                            <th>Price/Night</th>
+                            <th>Capacity</th>
+                            <th>Total</th>
+                            <th>Available</th>
+                            <th>Amenities</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roomsTableBody">
+                        <!-- Data populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Room Modal -->
+    <div id="editRoomModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Edit Room</h2>
+                <button class="close-btn" onclick="closeModal('editRoomModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Room Number</label>
+                    <input type="text" id="editRoomNumber" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="editRoomTitle" placeholder="Room title">
+                </div>
+                <div class="form-group">
+                    <label>Room Type</label>
+                    <select id="editRoomType">
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                        <option value="suite">Suite</option>
+                        <option value="family">Family</option>
+                        <option value="deluxe">Deluxe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price per Night (KES)</label>
+                    <input type="number" id="editRoomPrice" placeholder="5000">
+                </div>
+                <div class="form-group">
+                    <label>Capacity (Guests)</label>
+                    <input type="number" id="editRoomCapacity" placeholder="2">
+                </div>
+                <div class="form-group">
+                    <label>Total Rooms</label>
+                    <input type="number" id="editRoomTotal" placeholder="1">
+                </div>
+                <div class="form-group">
+                    <label>Amenities</label>
+                    <div class="checkbox-group">
+                        <label><input type="checkbox" id="hasWifi"> WiFi</label>
+                        <label><input type="checkbox" id="hasTV"> TV</label>
+                        <label><input type="checkbox" id="hasAC"> Air Conditioning</label>
+                        <label><input type="checkbox" id="hasBreakfast"> Breakfast Included</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('editRoomModal')">Cancel</button>
+                <button class="btn-success" onclick="saveRoomChanges()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Room Modal -->
+    <div id="addRoomModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Add New Room</h2>
+                <button class="close-btn" onclick="closeModal('addRoomModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Select Lodge</label>
+                    <select id="addRoomLodge">
+                        <option value="">Choose a lodge</option>
+                        <option value="sunset">Sunset Paradise Hotel</option>
+                        <option value="mountain">Mountain Lodge Resort</option>
+                        <option value="urban">Urban Apartments</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Room Number</label>
+                    <input type="text" id="addRoomNumber" placeholder="e.g., A101">
+                </div>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="addRoomTitle" placeholder="Room title">
+                </div>
+                <div class="form-group">
+                    <label>Room Type</label>
+                    <select id="addRoomType">
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                        <option value="suite">Suite</option>
+                        <option value="family">Family</option>
+                        <option value="deluxe">Deluxe</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Price per Night (KES)</label>
+                    <input type="number" id="addRoomPrice" placeholder="5000">
+                </div>
+                <div class="form-group">
+                    <label>Capacity (Guests)</label>
+                    <input type="number" id="addRoomCapacity" placeholder="2">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('addRoomModal')">Cancel</button>
+                <button class="btn-success" onclick="saveNewRoom()">Add Room</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let roomsData = [];
+        let selectedRoomId = null;
+
+        function loadRooms() {
+            roomsData = [
+                {
+                    id: 1,
+                    number: 'A101',
+                    lodge: 'Sunset Paradise Hotel',
+                    type: 'Double',
+                    title: 'Deluxe Double Room',
+                    price: 8500,
+                    capacity: 2,
+                    total: 1,
+                    available: true,
+                    amenities: ['WiFi', 'TV', 'AC']
+                },
+                {
+                    id: 2,
+                    number: 'A102',
+                    lodge: 'Sunset Paradise Hotel',
+                    type: 'Suite',
+                    title: 'Presidential Suite',
+                    price: 15000,
+                    capacity: 4,
+                    total: 1,
+                    available: false,
+                    amenities: ['WiFi', 'TV', 'AC', 'Breakfast']
+                },
+                {
+                    id: 3,
+                    number: 'B201',
+                    lodge: 'Mountain Lodge Resort',
+                    type: 'Family',
+                    title: 'Family Room',
+                    price: 12000,
+                    capacity: 6,
+                    total: 2,
+                    available: true,
+                    amenities: ['WiFi', 'AC']
+                },
+                {
+                    id: 4,
+                    number: 'C301',
+                    lodge: 'Urban Apartments',
+                    type: 'Single',
+                    title: 'Standard Single',
+                    price: 4500,
+                    capacity: 1,
+                    total: 5,
+                    available: true,
+                    amenities: ['WiFi']
+                },
+                {
+                    id: 5,
+                    number: 'A103',
+                    lodge: 'Sunset Paradise Hotel',
+                    type: 'Deluxe',
+                    title: 'Deluxe Room with Ocean View',
+                    price: 10000,
+                    capacity: 2,
+                    total: 1,
+                    available: true,
+                    amenities: ['WiFi', 'TV', 'AC', 'Breakfast']
+                }
+            ];
+            updateStats();
+            displayRooms(roomsData);
+        }
+
+        function updateStats() {
+            document.getElementById('totalRooms').textContent = roomsData.length;
+            document.getElementById('availableRooms').textContent = roomsData.filter(r => r.available).length;
+            document.getElementById('bookedRooms').textContent = roomsData.filter(r => !r.available).length;
+            
+            const avgPrice = roomsData.length > 0 
+                ? Math.round(roomsData.reduce((sum, r) => sum + r.price, 0) / roomsData.length)
+                : 0;
+            document.getElementById('avgPrice').textContent = 'KES ' + avgPrice;
+        }
+
+        function displayRooms(data) {
+            const tbody = document.getElementById('roomsTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(room => {
+                const availableBadge = room.available 
+                    ? '<span class="badge badge-success">Available</span>' 
+                    : '<span class="badge badge-danger">Booked</span>';
+                
+                const row = `
+                    <tr>
+                        <td><strong>${room.number}</strong></td>
+                        <td>${room.lodge}</td>
+                        <td>${room.type}</td>
+                        <td>${room.title}</td>
+                        <td>KES ${room.price.toLocaleString()}</td>
+                        <td>${room.capacity} guests</td>
+                        <td>${room.total}</td>
+                        <td>${availableBadge}</td>
+                        <td>${room.amenities.join(', ')}</td>
+                        <td>
+                            <button class="btn-small" onclick="openEditRoom(${room.id})">Edit</button>
+                            <button class="btn-small btn-danger" onclick="deleteRoom(${room.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function openEditRoom(roomId) {
+            selectedRoomId = roomId;
+            const room = roomsData.find(r => r.id === roomId);
+            
+            document.getElementById('editRoomNumber').value = room.number;
+            document.getElementById('editRoomTitle').value = room.title;
+            document.getElementById('editRoomType').value = room.type.toLowerCase();
+            document.getElementById('editRoomPrice').value = room.price;
+            document.getElementById('editRoomCapacity').value = room.capacity;
+            document.getElementById('editRoomTotal').value = room.total;
+            
+            document.getElementById('hasWifi').checked = room.amenities.includes('WiFi');
+            document.getElementById('hasTV').checked = room.amenities.includes('TV');
+            document.getElementById('hasAC').checked = room.amenities.includes('AC');
+            document.getElementById('hasBreakfast').checked = room.amenities.includes('Breakfast');
+            
+            openModal('editRoomModal');
+        }
+
+        function saveRoomChanges() {
+            const room = roomsData.find(r => r.id === selectedRoomId);
+            
+            room.title = document.getElementById('editRoomTitle').value;
+            room.type = document.getElementById('editRoomType').value;
+            room.price = parseInt(document.getElementById('editRoomPrice').value);
+            room.capacity = parseInt(document.getElementById('editRoomCapacity').value);
+            room.total = parseInt(document.getElementById('editRoomTotal').value);
+            
+            room.amenities = [];
+            if (document.getElementById('hasWifi').checked) room.amenities.push('WiFi');
+            if (document.getElementById('hasTV').checked) room.amenities.push('TV');
+            if (document.getElementById('hasAC').checked) room.amenities.push('AC');
+            if (document.getElementById('hasBreakfast').checked) room.amenities.push('Breakfast');
+            
+            updateStats();
+            displayRooms(roomsData);
+            closeModal('editRoomModal');
+            showNotification('Room updated successfully', 'success');
+        }
+
+        function openAddRoomModal() {
+            openModal('addRoomModal');
+        }
+
+        function saveNewRoom() {
+            const newRoom = {
+                id: roomsData.length + 1,
+                number: document.getElementById('addRoomNumber').value,
+                lodge: document.getElementById('addRoomLodge').value,
+                type: document.getElementById('addRoomType').value,
+                title: document.getElementById('addRoomTitle').value,
+                price: parseInt(document.getElementById('addRoomPrice').value),
+                capacity: parseInt(document.getElementById('addRoomCapacity').value),
+                total: 1,
+                available: true,
+                amenities: ['WiFi']
+            };
+            
+            if (newRoom.number && newRoom.lodge && newRoom.title) {
+                roomsData.push(newRoom);
+                updateStats();
+                displayRooms(roomsData);
+                closeModal('addRoomModal');
+                showNotification('Room added successfully', 'success');
+            } else {
+                showNotification('Please fill all required fields', 'error');
+            }
+        }
+
+        function deleteRoom(roomId) {
+            if (confirm('Are you sure you want to delete this room?')) {
+                roomsData = roomsData.filter(r => r.id !== roomId);
+                updateStats();
+                displayRooms(roomsData);
+                showNotification('Room deleted', 'success');
+            }
+        }
+
+        function filterRooms() {
+            let filtered = roomsData;
+            
+            const roomType = document.getElementById('filterRoomType').value;
+            const availability = document.getElementById('filterAvailability').value;
+            const lodge = document.getElementById('filterLodge').value;
+            
+            if (roomType) {
+                filtered = filtered.filter(r => r.type.toLowerCase() === roomType);
+            }
+            
+            if (availability) {
+                filtered = filtered.filter(r => availability === 'available' ? r.available : !r.available);
+            }
+            
+            if (lodge) {
+                const lodgeName = lodge === 'sunset' ? 'Sunset Paradise Hotel' : 
+                                  lodge === 'mountain' ? 'Mountain Lodge Resort' : 'Urban Apartments';
+                filtered = filtered.filter(r => r.lodge === lodgeName);
+            }
+            
+            displayRooms(filtered);
+        }
+
+        document.getElementById('searchRoom').addEventListener('keyup', (e) => {
+            const search = e.target.value.toLowerCase();
+            const filtered = roomsData.filter(r => 
+                r.number.toLowerCase().includes(search) || 
+                r.title.toLowerCase().includes(search) ||
+                r.lodge.toLowerCase().includes(search)
+            );
+            displayRooms(filtered);
+        });
+
+        // Initialize
+        loadRooms();
+    </script>
+</body>
+</html>

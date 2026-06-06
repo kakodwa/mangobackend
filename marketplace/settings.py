@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'events',
     'feed_engine',
     'analytics',
+    'admin_app',
 
     'cloudinary',
     'cloudinary_storage',

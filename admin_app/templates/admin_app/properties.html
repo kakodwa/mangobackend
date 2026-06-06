@@ -1,0 +1,361 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Properties Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html">🏪 Shops</a></li>
+                <li><a href="products.html">📦 Products</a></li>
+                <li><a href="properties.html" class="active">🏠 Properties</a></li>
+                <li><a href="deliveries.html">🚚 Deliveries</a></li>
+                <li><a href="reviews.html">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Properties Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by address, city, or owner...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All Types</option>
+                        <option>House</option>
+                        <option>Apartment</option>
+                        <option>Land</option>
+                        <option>Commercial</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Purpose</option>
+                        <option>For Sale</option>
+                        <option>For Rent</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Available</option>
+                        <option>Sold</option>
+                        <option>Rented</option>
+                    </select>
+                </div>
+
+                <!-- Properties Stats -->
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">🏠</div>
+                        <div class="stat-info">
+                            <h3>Total Properties</h3>
+                            <p class="stat-number">487</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">📢</div>
+                        <div class="stat-info">
+                            <h3>Listed</h3>
+                            <p class="stat-number">234</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #27AE60;">✓</div>
+                        <div class="stat-info">
+                            <h3>Available</h3>
+                            <p class="stat-number">189</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #F39C12;">💰</div>
+                        <div class="stat-info">
+                            <h3>Total Value</h3>
+                            <p class="stat-number">₦2.4B</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Approval Properties -->
+                <div class="section-card">
+                    <h2>⏳ Pending Approval</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Address</th>
+                                <th>Type</th>
+                                <th>Purpose</th>
+                                <th>Owner</th>
+                                <th>City</th>
+                                <th>Price</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Modern Apartment - Unit 5B</td>
+                                <td><span class="badge badge-blue">Apartment</span></td>
+                                <td><span class="badge badge-green">For Sale</span></td>
+                                <td>Grace Kachale</td>
+                                <td>Blantyre</td>
+                                <td>MWK 45,000,000</td>
+                                <td>2024-01-14</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openPropertyApproval('Modern Apartment - Unit 5B')">Review</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Commercial Space - Main Street</td>
+                                <td><span class="badge" style="background-color: #D1ECF1; color: #17A2B8;">Commercial</span></td>
+                                <td><span class="badge badge-yellow">For Rent</span></td>
+                                <td>Samuel Phiri</td>
+                                <td>Lilongwe</td>
+                                <td>MWK 1,500,000/month</td>
+                                <td>2024-01-12</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openPropertyApproval('Commercial Space - Main Street')">Review</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Residential Land Plot</td>
+                                <td><span class="badge" style="background-color: #F5E6D3; color: #8B4513;">Land</span></td>
+                                <td><span class="badge badge-green">For Sale</span></td>
+                                <td>John Banda</td>
+                                <td>Mzuzu</td>
+                                <td>MWK 8,500,000</td>
+                                <td>2024-01-13</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openPropertyApproval('Residential Land Plot')">Review</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Active Listings -->
+                <div class="section-card">
+                    <h2>✅ Active Listings</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Address</th>
+                                <th>Type</th>
+                                <th>Purpose</th>
+                                <th>Owner</th>
+                                <th>Bedrooms</th>
+                                <th>Price</th>
+                                <th>Views</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Luxury House - Garden Estate</td>
+                                <td><span class="badge badge-green">House</span></td>
+                                <td><span class="badge badge-green">For Sale</span></td>
+                                <td>Lucy Nkhata</td>
+                                <td>4</td>
+                                <td>MWK 85,000,000</td>
+                                <td>342</td>
+                                <td><span class="badge badge-green">Available</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Studio Apartment - City Center</td>
+                                <td><span class="badge badge-blue">Apartment</span></td>
+                                <td><span class="badge badge-yellow">For Rent</span></td>
+                                <td>Mary Chipoko</td>
+                                <td>1</td>
+                                <td>MWK 450,000/month</td>
+                                <td>567</td>
+                                <td><span class="badge badge-green">Available</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Two Bedroom Townhouse</td>
+                                <td><span class="badge badge-green">House</span></td>
+                                <td><span class="badge badge-green">For Sale</span></td>
+                                <td>David Malawi</td>
+                                <td>2</td>
+                                <td>MWK 32,000,000</td>
+                                <td>128</td>
+                                <td><span class="badge badge-green">Available</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Large Land Plot - Industrial Zone</td>
+                                <td><span class="badge" style="background-color: #F5E6D3; color: #8B4513;">Land</span></td>
+                                <td><span class="badge badge-green">For Sale</span></td>
+                                <td>Peter Mubita</td>
+                                <td>-</td>
+                                <td>MWK 15,000,000</td>
+                                <td>89</td>
+                                <td><span class="badge badge-green">Available</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Sold/Rented Properties -->
+                <div class="section-card">
+                    <h2>🔒 Sold / Rented Properties</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Address</th>
+                                <th>Type</th>
+                                <th>Owner</th>
+                                <th>Transaction Type</th>
+                                <th>Final Price</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>3BR House - Kanengo</td>
+                                <td><span class="badge badge-green">House</span></td>
+                                <td>Rose Banda</td>
+                                <td><span class="badge badge-green">Sold</span></td>
+                                <td>MWK 52,000,000</td>
+                                <td>2024-01-10</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">View Details</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Office Space - CBD</td>
+                                <td><span class="badge" style="background-color: #D1ECF1; color: #17A2B8;">Commercial</span></td>
+                                <td>Samuel Phiri</td>
+                                <td><span class="badge badge-yellow">Rented</span></td>
+                                <td>MWK 800,000/month</td>
+                                <td>2024-01-08</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">View Details</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Property Approval Modal -->
+    <div id="propertyApprovalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Property Approval Review</h2>
+                <button class="close-btn" onclick="closeModal('propertyApprovalModal')">&times;</button>
+            </div>
+            
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <h4>Property Details</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Type</label>
+                        <p style="margin: 5px 0;">Apartment</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Bedrooms</label>
+                        <p style="margin: 5px 0;">3</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Bathrooms</label>
+                        <p style="margin: 5px 0;">2</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Size (sqm)</label>
+                        <p style="margin: 5px 0;">150</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Price</label>
+                        <p style="margin: 5px 0;">MWK 45,000,000</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">City</label>
+                        <p style="margin: 5px 0;">Blantyre</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="approval-panel">
+                <h3>Approval Decision</h3>
+                <div class="form-group">
+                    <label>Decision</label>
+                    <select style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; width: 100%;">
+                        <option>Select Decision</option>
+                        <option>✓ Approve Listing</option>
+                        <option>✗ Reject Listing</option>
+                        <option>⏸ Request More Info</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Comments (Optional)</label>
+                    <textarea style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; width: 100%; min-height: 80px;" placeholder="Add notes about this property..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('propertyApprovalModal')">Cancel</button>
+                <button class="btn btn-danger">Reject</button>
+                <button class="btn btn-green">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

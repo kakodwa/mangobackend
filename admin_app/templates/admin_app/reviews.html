@@ -1,0 +1,358 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reviews Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html">🏪 Shops</a></li>
+                <li><a href="products.html">📦 Products</a></li>
+                <li><a href="properties.html">🏠 Properties</a></li>
+                <li><a href="deliveries.html">🚚 Deliveries</a></li>
+                <li><a href="reviews.html" class="active">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Reviews & Ratings Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by product, shop, or reviewer...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All Types</option>
+                        <option>Product Reviews</option>
+                        <option>Shop Reviews</option>
+                        <option>Delivery Reviews</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Ratings</option>
+                        <option>5 Stars</option>
+                        <option>4 Stars</option>
+                        <option>3 Stars</option>
+                        <option>2 Stars</option>
+                        <option>1 Star</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Approved</option>
+                        <option>Pending Review</option>
+                        <option>Flagged</option>
+                    </select>
+                </div>
+
+                <!-- Review Stats -->
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">⭐</div>
+                        <div class="stat-info">
+                            <h3>Total Reviews</h3>
+                            <p class="stat-number">2,456</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">⏳</div>
+                        <div class="stat-info">
+                            <h3>Pending Review</h3>
+                            <p class="stat-number">34</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #F39C12;">🚩</div>
+                        <div class="stat-info">
+                            <h3>Flagged</h3>
+                            <p class="stat-number">12</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #E74C3C;">❌</div>
+                        <div class="stat-info">
+                            <h3>Removed</h3>
+                            <p class="stat-number">8</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Reviews -->
+                <div class="section-card">
+                    <h2>⏳ Pending Review</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Reviewer</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Wireless Headphones</td>
+                                <td><span class="badge badge-blue">Product</span></td>
+                                <td>John Banda</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>Great sound quality and comfortable fit</td>
+                                <td>2024-01-15</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Tech Haven Store</td>
+                                <td><span class="badge badge-orange">Shop</span></td>
+                                <td>Mary Chipoko</td>
+                                <td>⭐⭐⭐⭐ (4)</td>
+                                <td>Excellent service, fast delivery. Would buy again!</td>
+                                <td>2024-01-15</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Summer Dress Collection</td>
+                                <td><span class="badge badge-blue">Product</span></td>
+                                <td>Samuel Phiri</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>Perfect fit, beautiful colors, amazing quality for the price</td>
+                                <td>2024-01-14</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Delivery Service</td>
+                                <td><span class="badge" style="background-color: #D1ECF1; color: #17A2B8;">Delivery</span></td>
+                                <td>Grace Kachale</td>
+                                <td>⭐⭐⭐⭐ (4)</td>
+                                <td>Fast and professional delivery. Driver was courteous</td>
+                                <td>2024-01-14</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Reject</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Approved Reviews -->
+                <div class="section-card">
+                    <h2>✅ Approved Reviews</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Type</th>
+                                <th>Reviewer</th>
+                                <th>Rating</th>
+                                <th>Comment</th>
+                                <th>Approved</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Office Desk Lamp</td>
+                                <td><span class="badge badge-blue">Product</span></td>
+                                <td>Peter Mubita</td>
+                                <td>⭐⭐⭐⭐ (4)</td>
+                                <td>Good quality lamp, nice design. Brightness could be better</td>
+                                <td>2024-01-10</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Style Boutique</td>
+                                <td><span class="badge badge-orange">Shop</span></td>
+                                <td>Lucy Nkhata</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>Best fashion store in town! Must visit!</td>
+                                <td>2024-01-12</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Organic Face Cream</td>
+                                <td><span class="badge badge-blue">Product</span></td>
+                                <td>David Malawi</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>Amazing product! My skin feels so much better after using it</td>
+                                <td>2024-01-11</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Running Shoes Pro</td>
+                                <td><span class="badge badge-blue">Product</span></td>
+                                <td>Rose Banda</td>
+                                <td>⭐⭐⭐⭐ (4)</td>
+                                <td>Comfortable shoes, great for running. True to size</td>
+                                <td>2024-01-09</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-danger">Remove</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Flagged Reviews -->
+                <div class="section-card">
+                    <h2>🚩 Flagged for Review</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Reviewer</th>
+                                <th>Rating</th>
+                                <th>Comment (Suspicious)</th>
+                                <th>Flag Reason</th>
+                                <th>Flagged Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Premium Keyboard</td>
+                                <td>Unknown User</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>"Best product ever! Highly recommend! Buy now!"</td>
+                                <td>Promotional language</td>
+                                <td>2024-01-13</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Winter Jacket</td>
+                                <td>Suspicious Account</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>"Terrible product! Don't buy from this shop!"</td>
+                                <td>Possible competitor attack</td>
+                                <td>2024-01-12</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Home Essentials Shop</td>
+                                <td>New User</td>
+                                <td>⭐⭐⭐⭐⭐ (5)</td>
+                                <td>Contains contact information and promotional links</td>
+                                <td>Spam/Marketing</td>
+                                <td>2024-01-11</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Approve</button>
+                                        <button class="btn-small btn-danger">Delete</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Rating Distribution -->
+                <div class="section-card">
+                    <h2>📊 Rating Distribution</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                        <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 24px; color: #FF8C00; font-weight: bold;">⭐⭐⭐⭐⭐</div>
+                            <p style="color: #666; margin: 10px 0 0 0;">5 Stars</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #2ECC71; margin: 8px 0;">1,245</p>
+                            <p style="color: #999; font-size: 12px;">50.7% of reviews</p>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 24px; color: #FF8C00; font-weight: bold;">⭐⭐⭐⭐</div>
+                            <p style="color: #666; margin: 10px 0 0 0;">4 Stars</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #2ECC71; margin: 8px 0;">892</p>
+                            <p style="color: #999; font-size: 12px;">36.3% of reviews</p>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 24px; color: #FF8C00; font-weight: bold;">⭐⭐⭐</div>
+                            <p style="color: #666; margin: 10px 0 0 0;">3 Stars</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #F39C12; margin: 8px 0;">201</p>
+                            <p style="color: #999; font-size: 12px;">8.2% of reviews</p>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 24px; color: #FF8C00; font-weight: bold;">⭐⭐</div>
+                            <p style="color: #666; margin: 10px 0 0 0;">2 Stars</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #E74C3C; margin: 8px 0;">78</p>
+                            <p style="color: #999; font-size: 12px;">3.2% of reviews</p>
+                        </div>
+                        <div style="text-align: center; padding: 20px; background: #f5f5f5; border-radius: 8px;">
+                            <div style="font-size: 24px; color: #FF8C00; font-weight: bold;">⭐</div>
+                            <p style="color: #666; margin: 10px 0 0 0;">1 Star</p>
+                            <p style="font-size: 24px; font-weight: bold; color: #E74C3C; margin: 8px 0;">40</p>
+                            <p style="color: #999; font-size: 12px;">1.6% of reviews</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tickets Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>MarketHub</h2>
+                <p>Admin Panel</p>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item">Dashboard</a>
+                <a href="users.html" class="nav-item">Users</a>
+                <a href="shops.html" class="nav-item">Shops</a>
+                <a href="products.html" class="nav-item">Products</a>
+                <a href="properties.html" class="nav-item">Properties</a>
+                <a href="deliveries.html" class="nav-item">Deliveries</a>
+                <a href="reviews.html" class="nav-item">Reviews</a>
+                <a href="lodges.html" class="nav-item">Lodges</a>
+                <a href="rooms.html" class="nav-item">Rooms</a>
+                <a href="bookings.html" class="nav-item">Bookings</a>
+                <a href="events.html" class="nav-item">Events</a>
+                <a href="tickets.html" class="nav-item active">Tickets</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Tickets Management</h1>
+                <div class="header-actions">
+                    <input type="text" id="searchTicket" placeholder="Search tickets..." class="search-bar">
+                    <button class="btn-primary" onclick="openAddTicketModal()">+ Issue Ticket</button>
+                </div>
+            </header>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <select id="filterTicketType" onchange="filterTickets()">
+                    <option value="">All Ticket Types</option>
+                    <option value="regular">Regular</option>
+                    <option value="vip">VIP</option>
+                    <option value="vvip">VVIP</option>
+                </select>
+                <select id="filterPaymentStatus" onchange="filterTickets()">
+                    <option value="">All Payment Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="paid">Paid</option>
+                    <option value="failed">Failed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <select id="filterEvent" onchange="filterTickets()">
+                    <option value="">All Events</option>
+                    <option value="tech">Tech Summit 2024</option>
+                    <option value="concert">Live Concert Night</option>
+                    <option value="sports">Kenya Premier League</option>
+                </select>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTickets">0</div>
+                    <div class="stat-label">Total Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="paidTickets">0</div>
+                    <div class="stat-label">Paid Tickets</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="pendingPayment">0</div>
+                    <div class="stat-label">Pending Payment</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTicketRevenue">KES 0</div>
+                    <div class="stat-label">Ticket Revenue</div>
+                </div>
+            </div>
+
+            <!-- Tickets Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Ticket #</th>
+                            <th>Event</th>
+                            <th>Customer</th>
+                            <th>Ticket Type</th>
+                            <th>Quantity</th>
+                            <th>Amount (KES)</th>
+                            <th>Payment Status</th>
+                            <th>Purchased</th>
+                            <th>QR Code</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ticketsTableBody">
+                        <!-- Data populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- View Ticket Modal -->
+    <div id="viewTicketModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Ticket Details</h2>
+                <button class="close-btn" onclick="closeModal('viewTicketModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="ticketDetails"></div>
+                <div class="modal-section">
+                    <h3>Manage Ticket</h3>
+                    <div class="form-group">
+                        <label>Payment Status</label>
+                        <select id="updatePaymentStatus">
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                            <option value="failed">Failed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>QR Code Status</label>
+                        <select id="qrStatus">
+                            <option value="generated">Generated</option>
+                            <option value="verified">Verified</option>
+                            <option value="scanned">Scanned</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('viewTicketModal')">Close</button>
+                <button class="btn-success" onclick="updateTicketStatus()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Ticket Modal -->
+    <div id="addTicketModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Issue New Ticket</h2>
+                <button class="close-btn" onclick="closeModal('addTicketModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Select Event</label>
+                    <select id="ticketEvent">
+                        <option value="">Choose event</option>
+                        <option value="tech">Tech Summit 2024</option>
+                        <option value="concert">Live Concert Night</option>
+                        <option value="workshop">Photography Workshop</option>
+                        <option value="sports">Kenya Premier League</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Ticket Type</label>
+                    <select id="ticketType">
+                        <option value="regular">Regular</option>
+                        <option value="vip">VIP</option>
+                        <option value="vvip">VVIP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Customer Email</label>
+                    <input type="email" id="customerEmail" placeholder="customer@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input type="number" id="ticketQuantity" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Amount per Ticket (KES)</label>
+                    <input type="number" id="ticketAmount" placeholder="5000">
+                </div>
+                <div class="form-group">
+                    <label>Seat Number (Optional)</label>
+                    <input type="text" id="seatNumber" placeholder="e.g., A-45">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('addTicketModal')">Cancel</button>
+                <button class="btn-success" onclick="saveNewTicket()">Issue Ticket</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let ticketsData = [];
+        let selectedTicketId = null;
+
+        function loadTickets() {
+            ticketsData = [
+                {
+                    id: 1,
+                    number: 'TK-001234',
+                    event: 'Tech Summit 2024',
+                    customer: 'john.doe@email.com',
+                    type: 'Regular',
+                    quantity: 2,
+                    amount: 10000,
+                    payment_status: 'paid',
+                    purchased: '2024-03-01',
+                    qr_generated: true,
+                    seat: 'A-45'
+                },
+                {
+                    id: 2,
+                    number: 'TK-001235',
+                    event: 'Tech Summit 2024',
+                    customer: 'jane.smith@email.com',
+                    type: 'VIP',
+                    quantity: 1,
+                    amount: 15000,
+                    payment_status: 'paid',
+                    purchased: '2024-03-02',
+                    qr_generated: true,
+                    seat: 'B-12'
+                },
+                {
+                    id: 3,
+                    number: 'TK-001236',
+                    event: 'Live Concert Night',
+                    customer: 'mike.johnson@email.com',
+                    type: 'VVIP',
+                    quantity: 4,
+                    amount: 60000,
+                    payment_status: 'pending',
+                    purchased: '2024-03-03',
+                    qr_generated: false,
+                    seat: 'VIP-01'
+                },
+                {
+                    id: 4,
+                    number: 'TK-001237',
+                    event: 'Kenya Premier League',
+                    customer: 'sarah.wilson@email.com',
+                    type: 'Regular',
+                    quantity: 3,
+                    amount: 15000,
+                    payment_status: 'paid',
+                    purchased: '2024-03-04',
+                    qr_generated: true,
+                    seat: 'C-78'
+                },
+                {
+                    id: 5,
+                    number: 'TK-001238',
+                    event: 'Photography Workshop',
+                    customer: 'tom.brown@email.com',
+                    type: 'Regular',
+                    quantity: 1,
+                    amount: 5000,
+                    payment_status: 'failed',
+                    purchased: '2024-03-05',
+                    qr_generated: false,
+                    seat: 'D-34'
+                },
+                {
+                    id: 6,
+                    number: 'TK-001239',
+                    event: 'Tech Summit 2024',
+                    customer: 'emma.davis@email.com',
+                    type: 'VIP',
+                    quantity: 2,
+                    amount: 30000,
+                    payment_status: 'pending',
+                    purchased: '2024-03-06',
+                    qr_generated: false,
+                    seat: 'E-56'
+                }
+            ];
+            updateStats();
+            displayTickets(ticketsData);
+        }
+
+        function updateStats() {
+            document.getElementById('totalTickets').textContent = ticketsData.length;
+            document.getElementById('paidTickets').textContent = ticketsData.filter(t => t.payment_status === 'paid').length;
+            document.getElementById('pendingPayment').textContent = ticketsData.filter(t => t.payment_status === 'pending').length;
+            
+            const revenue = ticketsData
+                .filter(t => t.payment_status === 'paid')
+                .reduce((sum, t) => sum + t.amount, 0);
+            document.getElementById('totalTicketRevenue').textContent = 'KES ' + revenue.toLocaleString();
+        }
+
+        function displayTickets(data) {
+            const tbody = document.getElementById('ticketsTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(ticket => {
+                const paymentBadge = getPaymentBadge(ticket.payment_status);
+                const qrBadge = ticket.qr_generated 
+                    ? '<span class="badge badge-success">✓ Generated</span>' 
+                    : '<span class="badge badge-warning">Pending</span>';
+                
+                const row = `
+                    <tr>
+                        <td><strong>${ticket.number}</strong></td>
+                        <td>${ticket.event}</td>
+                        <td>${ticket.customer}</td>
+                        <td>${ticket.type}</td>
+                        <td>${ticket.quantity}</td>
+                        <td>KES ${ticket.amount.toLocaleString()}</td>
+                        <td>${paymentBadge}</td>
+                        <td>${ticket.purchased}</td>
+                        <td>${qrBadge}</td>
+                        <td>
+                            <button class="btn-small" onclick="openViewTicket(${ticket.id})">View</button>
+                            <button class="btn-small btn-danger" onclick="cancelTicket(${ticket.id})">Cancel</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function getPaymentBadge(status) {
+            const badges = {
+                'pending': '<span class="badge badge-warning">Pending</span>',
+                'paid': '<span class="badge badge-success">Paid</span>',
+                'failed': '<span class="badge badge-danger">Failed</span>',
+                'cancelled': '<span class="badge badge-secondary">Cancelled</span>'
+            };
+            return badges[status] || status;
+        }
+
+        function openViewTicket(ticketId) {
+            selectedTicketId = ticketId;
+            const ticket = ticketsData.find(t => t.id === ticketId);
+            
+            document.getElementById('ticketDetails').innerHTML = `
+                <div class="detail-grid">
+                    <div><strong>Ticket Number:</strong> ${ticket.number}</div>
+                    <div><strong>Event:</strong> ${ticket.event}</div>
+                    <div><strong>Customer:</strong> ${ticket.customer}</div>
+                    <div><strong>Ticket Type:</strong> ${ticket.type}</div>
+                    <div><strong>Quantity:</strong> ${ticket.quantity}</div>
+                    <div><strong>Amount:</strong> KES ${ticket.amount.toLocaleString()}</div>
+                    <div><strong>Seat:</strong> ${ticket.seat || 'N/A'}</div>
+                    <div><strong>Purchased:</strong> ${ticket.purchased}</div>
+                    <div><strong>QR Code:</strong> ${ticket.qr_generated ? 'Generated' : 'Not Generated'}</div>
+                    <div><strong>Current Status:</strong> ${ticket.payment_status}</div>
+                </div>
+            `;
+            
+            document.getElementById('updatePaymentStatus').value = ticket.payment_status;
+            
+            openModal('viewTicketModal');
+        }
+
+        function updateTicketStatus() {
+            const ticket = ticketsData.find(t => t.id === selectedTicketId);
+            ticket.payment_status = document.getElementById('updatePaymentStatus').value;
+            
+            if (ticket.payment_status === 'paid' && !ticket.qr_generated) {
+                ticket.qr_generated = true;
+            }
+            
+            updateStats();
+            displayTickets(ticketsData);
+            closeModal('viewTicketModal');
+            showNotification('Ticket status updated', 'success');
+        }
+
+        function openAddTicketModal() {
+            openModal('addTicketModal');
+        }
+
+        function saveNewTicket() {
+            const newTicket = {
+                id: ticketsData.length + 1,
+                number: 'TK-' + String(100000 + ticketsData.length).slice(1),
+                event: document.getElementById('ticketEvent').value,
+                customer: document.getElementById('customerEmail').value,
+                type: document.getElementById('ticketType').value,
+                quantity: parseInt(document.getElementById('ticketQuantity').value),
+                amount: parseInt(document.getElementById('ticketAmount').value),
+                payment_status: 'pending',
+                purchased: new Date().toISOString().split('T')[0],
+                qr_generated: false,
+                seat: document.getElementById('seatNumber').value || 'TBD'
+            };
+            
+            if (newTicket.event && newTicket.customer && newTicket.amount) {
+                ticketsData.push(newTicket);
+                updateStats();
+                displayTickets(ticketsData);
+                closeModal('addTicketModal');
+                showNotification('Ticket issued successfully', 'success');
+            } else {
+                showNotification('Please fill all required fields', 'error');
+            }
+        }
+
+        function cancelTicket(ticketId) {
+            if (confirm('Are you sure you want to cancel this ticket?')) {
+                const ticket = ticketsData.find(t => t.id === ticketId);
+                ticket.payment_status = 'cancelled';
+                updateStats();
+                displayTickets(ticketsData);
+                showNotification('Ticket cancelled', 'success');
+            }
+        }
+
+        function filterTickets() {
+            let filtered = ticketsData;
+            
+            const type = document.getElementById('filterTicketType').value;
+            const payment = document.getElementById('filterPaymentStatus').value;
+            const event = document.getElementById('filterEvent').value;
+            
+            if (type) {
+                filtered = filtered.filter(t => t.type.toLowerCase() === type);
+            }
+            
+            if (payment) {
+                filtered = filtered.filter(t => t.payment_status === payment);
+            }
+            
+            if (event) {
+                const eventName = event === 'tech' ? 'Tech Summit 2024' : 
+                                  event === 'concert' ? 'Live Concert Night' : 'Kenya Premier League';
+                filtered = filtered.filter(t => t.event === eventName);
+            }
+            
+            displayTickets(filtered);
+        }
+
+        document.getElementById('searchTicket').addEventListener('keyup', (e) => {
+            const search = e.target.value.toLowerCase();
+            const filtered = ticketsData.filter(t => 
+                t.number.toLowerCase().includes(search) || 
+                t.customer.toLowerCase().includes(search) ||
+                t.event.toLowerCase().includes(search)
+            );
+            displayTickets(filtered);
+        });
+
+        // Initialize
+        loadTickets();
+    </script>
+</body>
+</html>

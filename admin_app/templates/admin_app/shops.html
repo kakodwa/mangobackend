@@ -1,0 +1,318 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shops Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html" class="active">🏪 Shops</a></li>
+                <li><a href="products.html">📦 Products</a></li>
+                <li><a href="properties.html">🏠 Properties</a></li>
+                <li><a href="deliveries.html">🚚 Deliveries</a></li>
+                <li><a href="reviews.html">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Shops Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by shop name, owner, or category...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Pending Approval</option>
+                        <option>Approved</option>
+                        <option>Rejected</option>
+                        <option>Suspended</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Categories</option>
+                        <option>Fashion</option>
+                        <option>Electronics</option>
+                        <option>Food & Beverages</option>
+                        <option>Home & Garden</option>
+                        <option>Beauty</option>
+                    </select>
+                </div>
+
+                <!-- Pending Approval Section -->
+                <div class="section-card">
+                    <h2>⏳ Pending Approval</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Owner</th>
+                                <th>Category</th>
+                                <th>City</th>
+                                <th>Rating</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Fashion Hub Store</td>
+                                <td>Mary Chipoko</td>
+                                <td>Fashion</td>
+                                <td>Lilongwe</td>
+                                <td>-</td>
+                                <td>2024-01-15</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openApprovalModal('Fashion Hub Store', 'Mary Chipoko')">Review</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Electronics Plus</td>
+                                <td>David Malawi</td>
+                                <td>Electronics</td>
+                                <td>Blantyre</td>
+                                <td>-</td>
+                                <td>2024-01-13</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openApprovalModal('Electronics Plus', 'David Malawi')">Review</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mama's Kitchen</td>
+                                <td>Rose Banda</td>
+                                <td>Food & Beverages</td>
+                                <td>Mzuzu</td>
+                                <td>-</td>
+                                <td>2024-01-14</td>
+                                <td>
+                                    <button class="btn-small btn-green" onclick="openApprovalModal('Mama\'s Kitchen', 'Rose Banda')">Review</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Approved Shops Section -->
+                <div class="section-card">
+                    <h2>✅ Approved Shops</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Owner</th>
+                                <th>Category</th>
+                                <th>City</th>
+                                <th>Rating</th>
+                                <th>Products</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Tech Haven</td>
+                                <td>John Banda</td>
+                                <td>Electronics</td>
+                                <td>Lilongwe</td>
+                                <td>4.5 ⭐</td>
+                                <td>245</td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Style Boutique</td>
+                                <td>Grace Kachale</td>
+                                <td>Fashion</td>
+                                <td>Blantyre</td>
+                                <td>4.8 ⭐</td>
+                                <td>189</td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Home Essentials</td>
+                                <td>Samuel Phiri</td>
+                                <td>Home & Garden</td>
+                                <td>Mzuzu</td>
+                                <td>4.2 ⭐</td>
+                                <td>312</td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Beauty Salon Pro</td>
+                                <td>Lucy Nkhata</td>
+                                <td>Beauty</td>
+                                <td>Lilongwe</td>
+                                <td>4.9 ⭐</td>
+                                <td>156</td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Rejected/Suspended Shops -->
+                <div class="section-card">
+                    <h2>❌ Rejected / Suspended Shops</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Shop Name</th>
+                                <th>Owner</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Reason</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Suspicious Store</td>
+                                <td>Unknown User</td>
+                                <td>General</td>
+                                <td><span class="badge badge-red">Rejected</span></td>
+                                <td>Incomplete documentation</td>
+                                <td>2024-01-10</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">Reapply</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Violation Store</td>
+                                <td>Banned User</td>
+                                <td>General</td>
+                                <td><span class="badge badge-red">Suspended</span></td>
+                                <td>Policy violation</td>
+                                <td>2024-01-05</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">Appeal</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div id="approvalModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Shop Approval Review</h2>
+                <button class="close-btn" onclick="closeModal('approvalModal')">&times;</button>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h3 id="shopNameDisplay"></h3>
+                <p id="ownerDisplay" style="color: #666;"></p>
+            </div>
+
+            <div style="background-color: #f5f5f5; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <h4>Shop Information</h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Category</label>
+                        <p style="margin: 5px 0;">Electronics</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Phone</label>
+                        <p style="margin: 5px 0;">+265 123 456 789</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Email</label>
+                        <p style="margin: 5px 0;">shop@email.com</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">City</label>
+                        <p style="margin: 5px 0;">Lilongwe</p>
+                    </div>
+                    <div>
+                        <label style="color: #666; font-size: 12px;">Address</label>
+                        <p style="margin: 5px 0;">123 Main Street, Lilongwe</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="approval-panel">
+                <h3>Approval Decision</h3>
+                <div class="form-group">
+                    <label>Decision</label>
+                    <select class="form-group">
+                        <option>Select Decision</option>
+                        <option>✓ Approve</option>
+                        <option>✗ Reject</option>
+                        <option>⏸ Request More Info</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Comments (Optional)</label>
+                    <textarea style="padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; width: 100%; min-height: 80px;" placeholder="Add notes about this approval decision..."></textarea>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('approvalModal')">Cancel</button>
+                <button class="btn btn-danger">Reject</button>
+                <button class="btn btn-green">Approve</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

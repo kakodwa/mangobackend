@@ -1,0 +1,96 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+{% block content %}
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by name, email, or phone...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All User Types</option>
+                        <option>Customer</option>
+                        <option>Shop Owner</option>
+                        <option>Property Owner</option>
+                        <option>Hospitality Owner</option>
+                        <option>Event Organizer</option>
+                        <option>Admin</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Verified</option>
+                        <option>Unverified</option>
+                        <option>Active</option>
+                        <option>Inactive</option>
+                    </select>
+                    <button class="btn btn-orange">🔄 Refresh</button>
+                </div>
+
+                <!-- Users Table -->
+                <div class="section-card">
+                    <h2>👥 Registered Users</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>User Type</th>
+                                <th>District</th>
+                                <th>Verified</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td>{{u.get_full_name}}</td>
+                                <td>{{u.email}}</td>
+                                <td>{{u.phone_number}}</td>
+                                <td><span class="badge badge-blue">{{u.user_type}}</span></td>
+                                <td><span class="badge badge-green">{{u.district}}</span></td>
+                                <td><span class="badge badge-green">✓{{u.is_verified}}</span></td>
+                                <td>{{u.date_joined}}</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('Lucy Nkhata')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div style="display: flex; justify-content: center; gap: 10px; margin-top: 30px;">
+                    <button class="btn btn-secondary">← Previous</button>
+                    <button class="btn" style="background-color: #FF8C00; color: white;">1</button>
+                    <button class="btn btn-secondary">2</button>
+                    <button class="btn btn-secondary">3</button>
+                    <button class="btn btn-secondary">Next →</button>
+                </div>
+            </section>
+       {% endblock %}
+
+    <!-- User Details Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>User Details</h2>
+                <button class="close-btn" onclick="closeModal('userModal')">&times;</button>
+            </div>
+            <div id="userDetails"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('userModal')">Close</button>
+                <button class="btn btn-orange">Edit User</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

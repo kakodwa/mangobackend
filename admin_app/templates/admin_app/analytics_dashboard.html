@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace System AppEvent Analytics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* Branding Guidelines Setup */
+            --mango-orange: #FF9F1C;
+            --mango-alpha-30: rgba(255, 159, 28, 0.3);
+            --mango-light: #FFF4E5;
+            
+            --leaf-green: #2E7D32;
+            --leaf-alpha-20: rgba(46, 125, 50, 0.2);
+            --leaf-light: #E8F5E9;
+            
+            /* UI System Canvas Architecture Accent Framework */
+            --bg-canvas: #F8FAFC;
+            --surface-card: #FFFFFF;
+            --border-line: #E2E8F0;
+            --text-title: #1E293B;
+            --text-caption: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-title);
+            padding: 40px 20px;
+        }
+
+        .dashboard-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Branding Panel Header Block */
+        .analytics-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            border-bottom: 2px dashed var(--border-line);
+            padding-bottom: 20px;
+        }
+
+        .header-title h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--leaf-green);
+        }
+
+        .header-title h1 span {
+            color: var(--mango-orange);
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: var(--text-caption);
+            margin-top: 4px;
+        }
+
+        .refresh-pill {
+            background-color: var(--leaf-light);
+            color: var(--leaf-green);
+            padding: 10px 18px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--leaf-alpha-20);
+        }
+
+        /* Grid Framework Blueprint Positioning */
+        .chart-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+        }
+
+        .chart-card {
+            background-color: var(--surface-card);
+            border: 1px solid var(--border-line);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-card-header {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .chart-card-header i {
+            font-size: 18px;
+            color: var(--mango-orange);
+            background-color: var(--mango-light);
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .chart-card-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Responsive Grid Column Spans */
+        .col-12 { grid-column: span 12; }
+        .col-8  { grid-column: span 8; }
+        .col-4  { grid-column: span 4; }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            flex-grow: 1;
+        }
+
+        /* Enforce structured maximum heights for non-linear charts */
+        .fixed-height {
+            max-height: 280px;
+        }
+
+        @media (max-width: 992px) {
+            .col-8, .col-4 { grid-column: span 12; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-wrapper">
+        <div class="analytics-header">
+            <div class="header-title">
+                <h1>AppEvent <span>Operational Analytics</span></h1>
+                <p>Telemetry metrics monitoring system events, device metrics, and GPS compliance parameters.</p>
+            </div>
+            <div class="refresh-pill">
+                <i class="fa-solid fa-circle-dot fa-pulse"></i> Real-time Logging Data Active
+            </div>
+        </div>
+
+        <div class="chart-grid">
+            
+            <div class="chart-card col-8">
+                <div class="chart-card-header">
+                    <i class="fa-solid fa-chart-line" style="color: var(--leaf-green); background-color: var(--leaf-light);"></i>
+                    <h2>System Interactions Volumetric Activity (Last 7 Days)</h2>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="timelineChart" style="max-height: 320px;"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card col-4">
+                <div class="chart-card-header">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                    <h2>Platform Source Breakdown</h2>
+                </div>
+                <div class="canvas-container fixed-height">
+                    <canvas id="deviceChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card col-8">
+                <div class="chart-card-header">
+                    <i class="fa-solid fa-bolt"></i>
+                    <h2>High-Frequency Feature Actions Run Rates</h2>
+                </div>
+                <div class="canvas-container">
+                    <canvas id="eventChart" style="max-height: 300px;"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-card col-4">
+                <div class="chart-card-header">
+                    <i class="fa-solid fa-location-crosshairs" style="color: var(--leaf-green); background-color: var(--leaf-light);"></i>
+                    <h2>User GPS Permission Consent Analysis</h2>
+                </div>
+                <div class="canvas-container fixed-height">
+                    <canvas id="gpsChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Mock payload representing the precise data structure outputted by the Django view
+        const apiDataPlaceholder = {
+            devices: [
+                { device_type: 'Android App', total: 4820 },
+                { device_type: 'iOS App', total: 3150 },
+                { device_type: 'Desktop Web', total: 1940 }
+            ],
+            events: [
+                { event_name: 'Product_View_Detail', total: 5400 },
+                { event_name: 'Search_Query_Execute', total: 3200 },
+                { event_name: 'Property_Unlock_Initiated', total: 1850 },
+                { event_name: 'Cart_Item_Append', total: 1420 },
+                { event_name: 'Negotiation_Bid_Submit', total: 930 },
+                { event_name: 'Shop_Registration_Apply', total: 340 }
+            ],
+            timeline: [
+                { day: 'Jun 01', total: 1200 },
+                { day: 'Jun 02', total: 1450 },
+                { day: 'Jun 03', total: 1100 },
+                { day: 'Jun 04', total: 1650 },
+                { day: 'Jun 05', total: 1900 },
+                { day: 'Jun 06', total: 2240 },
+                { day: 'Jun 07', total: 2400 }
+            ],
+            gps: {
+                allowed: 6420,
+                denied: 3490
+            }
+        };
+
+        // Initialize visual chart renderings upon page load context target
+        document.addEventListener("DOMContentLoaded", () => {
+            renderDashboardCharts(apiDataPlaceholder);
+            
+            // To fetch directly from your live Django View endpoint instead, uncomment below:
+            /*
+            fetch('/analytics/api/chart-data/')
+                .then(response => response.json())
+                .then(data => renderDashboardCharts(data))
+                .catch(err => console.error("Error mapping analytical endpoints: ", err));
+            */
+        });
+
+        function renderDashboardCharts(data) {
+            // Theme Palette Matrix Arrays Configuration
+            const primaryGreen = '#2E7D32';
+            const primaryOrange = '#FF9F1C';
+            const secondaryTeal = '#00796B';
+            const lightMutedGray = '#CBD5E1';
+
+            // --- CHART 1: Timeline Volume Tracking Line Graph ---
+            new Chart(document.getElementById('timelineChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: data.timeline.map(x => x.day),
+                    datasets: [{
+                        label: 'Aggregated App Actions Logged',
+                        data: data.timeline.map(x => x.total),
+                        borderColor: primaryGreen,
+                        backgroundColor: 'rgba(46, 125, 50, 0.06)',
+                        fill: true,
+                        tension: 0.35,
+                        borderWidth: 3,
+                        pointBackgroundColor: primaryOrange,
+                        pointBorderColor: '#FFFFFF',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: '#F1F5F9' }, ticks: { color: '#64748B' } },
+                        x: { grid: { display: false }, ticks: { color: '#64748B' } }
+                    }
+                }
+            });
+
+            // --- CHART 2: Platform Distribution Donut Graph ---
+            new Chart(document.getElementById('deviceChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.devices.map(x => x.device_type),
+                    datasets: [{
+                        data: data.devices.map(x => x.total),
+                        backgroundColor: [primaryGreen, primaryOrange, secondaryTeal],
+                        borderWidth: 2,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // --- CHART 3: Feature Actions Run Rates Horizontal Bar Graph ---
+            new Chart(document.getElementById('eventChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: data.events.map(x => x.event_name),
+                    datasets: [{
+                        label: 'Total Operations Captured',
+                        data: data.events.map(x => x.total),
+                        backgroundColor: primaryOrange,
+                        borderRadius: 6,
+                        barThickness: 16
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: '#F1F5F9' } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+
+            // --- CHART 4: User GPS Permissions Consent Pie Graph ---
+            new Chart(document.getElementById('gpsChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['Location Shared', 'Anonymous / Denied'],
+                    datasets: [{
+                        data: [data.gps.allowed, data.gps.denied],
+                        backgroundColor: [primaryGreen, lightMutedGray],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,452 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Events Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h2>MarketHub</h2>
+                <p>Admin Panel</p>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item">Dashboard</a>
+                <a href="users.html" class="nav-item">Users</a>
+                <a href="shops.html" class="nav-item">Shops</a>
+                <a href="products.html" class="nav-item">Products</a>
+                <a href="properties.html" class="nav-item">Properties</a>
+                <a href="deliveries.html" class="nav-item">Deliveries</a>
+                <a href="reviews.html" class="nav-item">Reviews</a>
+                <a href="lodges.html" class="nav-item">Lodges</a>
+                <a href="rooms.html" class="nav-item">Rooms</a>
+                <a href="bookings.html" class="nav-item">Bookings</a>
+                <a href="events.html" class="nav-item active">Events</a>
+                <a href="tickets.html" class="nav-item">Tickets</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Events Management</h1>
+                <div class="header-actions">
+                    <input type="text" id="searchEvent" placeholder="Search events..." class="search-bar">
+                    <button class="btn-primary" onclick="openAddEventModal()">+ Create Event</button>
+                </div>
+            </header>
+
+            <!-- Filter Section -->
+            <div class="filter-section">
+                <select id="filterEventStatus" onchange="filterEvents()">
+                    <option value="">All Status</option>
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="cancelled">Cancelled</option>
+                    <option value="completed">Completed</option>
+                </select>
+                <select id="filterCategory" onchange="filterEvents()">
+                    <option value="">All Categories</option>
+                    <option value="concert">Concert</option>
+                    <option value="conference">Conference</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="sports">Sports</option>
+                </select>
+                <select id="filterFeatured" onchange="filterEvents()">
+                    <option value="">All</option>
+                    <option value="featured">Featured Only</option>
+                </select>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalEvents">0</div>
+                    <div class="stat-label">Total Events</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="publishedEvents">0</div>
+                    <div class="stat-label">Published</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTicketsSold">0</div>
+                    <div class="stat-label">Tickets Sold</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalRevenue">KES 0</div>
+                    <div class="stat-label">Revenue</div>
+                </div>
+            </div>
+
+            <!-- Events Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Event Title</th>
+                            <th>Organizer</th>
+                            <th>Category</th>
+                            <th>Date</th>
+                            <th>Venue</th>
+                            <th>Tickets</th>
+                            <th>Status</th>
+                            <th>Featured</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="eventsTableBody">
+                        <!-- Data populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- Approve Event Modal -->
+    <div id="approveEventModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Review Event</h2>
+                <button class="close-btn" onclick="closeModal('approveEventModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="eventDetails"></div>
+                <div class="form-group">
+                    <label>Event Status</label>
+                    <select id="eventStatusSelect">
+                        <option value="draft">Draft</option>
+                        <option value="published">Published</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="featuredCheck"> Feature this event
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Admin Notes</label>
+                    <textarea id="eventNotes" placeholder="Add notes..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('approveEventModal')">Close</button>
+                <button class="btn-success" onclick="saveEventReview()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Event Modal -->
+    <div id="addEventModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Create New Event</h2>
+                <button class="close-btn" onclick="closeModal('addEventModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Event Title</label>
+                    <input type="text" id="eventTitle" placeholder="Event title">
+                </div>
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="eventCategory">
+                        <option value="concert">Concert</option>
+                        <option value="conference">Conference</option>
+                        <option value="workshop">Workshop</option>
+                        <option value="sports">Sports</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Event Date</label>
+                    <input type="date" id="eventDate">
+                </div>
+                <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="time" id="eventStartTime">
+                </div>
+                <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" id="eventEndTime">
+                </div>
+                <div class="form-group">
+                    <label>Venue</label>
+                    <input type="text" id="eventVenue" placeholder="Venue name">
+                </div>
+                <div class="form-group">
+                    <label>City</label>
+                    <input type="text" id="eventCity" placeholder="City">
+                </div>
+                <div class="form-group">
+                    <label>Organizer Email</label>
+                    <input type="email" id="organizerEmail" placeholder="organizer@example.com">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('addEventModal')">Cancel</button>
+                <button class="btn-success" onclick="saveNewEvent()">Create Event</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let eventsData = [];
+        let selectedEventId = null;
+
+        function loadEvents() {
+            eventsData = [
+                {
+                    id: 1,
+                    title: 'Tech Summit 2024',
+                    organizer: 'Tech Kenya',
+                    category: 'Conference',
+                    date: '2024-04-15',
+                    time: '09:00 - 17:00',
+                    venue: 'KICC',
+                    city: 'Nairobi',
+                    status: 'published',
+                    featured: true,
+                    totalTickets: 500,
+                    soldTickets: 380,
+                    revenue: 3800000
+                },
+                {
+                    id: 2,
+                    title: 'Live Concert Night',
+                    organizer: 'Music Productions',
+                    category: 'Concert',
+                    date: '2024-05-20',
+                    time: '19:00 - 23:00',
+                    venue: 'Safari Park Hotel',
+                    city: 'Nairobi',
+                    status: 'draft',
+                    featured: false,
+                    totalTickets: 1000,
+                    soldTickets: 245,
+                    revenue: 2450000
+                },
+                {
+                    id: 3,
+                    title: 'Photography Workshop',
+                    organizer: 'Photo Masters',
+                    category: 'Workshop',
+                    date: '2024-04-25',
+                    time: '10:00 - 16:00',
+                    venue: 'Creative Space',
+                    city: 'Mombasa',
+                    status: 'published',
+                    featured: false,
+                    totalTickets: 50,
+                    soldTickets: 48,
+                    revenue: 240000
+                },
+                {
+                    id: 4,
+                    title: 'Kenya Premier League',
+                    organizer: 'Football Association',
+                    category: 'Sports',
+                    date: '2024-06-10',
+                    time: '15:00 - 18:00',
+                    venue: 'Kasarani Stadium',
+                    city: 'Nairobi',
+                    status: 'published',
+                    featured: true,
+                    totalTickets: 5000,
+                    soldTickets: 4200,
+                    revenue: 42000000
+                },
+                {
+                    id: 5,
+                    title: 'Digital Marketing Seminar',
+                    organizer: 'Marketing Pro',
+                    category: 'Conference',
+                    date: '2024-05-05',
+                    time: '09:00 - 15:00',
+                    venue: 'Crowne Plaza',
+                    city: 'Nairobi',
+                    status: 'cancelled',
+                    featured: false,
+                    totalTickets: 200,
+                    soldTickets: 120,
+                    revenue: 600000
+                }
+            ];
+            updateStats();
+            displayEvents(eventsData);
+        }
+
+        function updateStats() {
+            document.getElementById('totalEvents').textContent = eventsData.length;
+            document.getElementById('publishedEvents').textContent = eventsData.filter(e => e.status === 'published').length;
+            
+            const totalTickets = eventsData.reduce((sum, e) => sum + e.soldTickets, 0);
+            document.getElementById('totalTicketsSold').textContent = totalTickets;
+            
+            const revenue = eventsData.reduce((sum, e) => sum + e.revenue, 0);
+            document.getElementById('totalRevenue').textContent = 'KES ' + revenue.toLocaleString();
+        }
+
+        function displayEvents(data) {
+            const tbody = document.getElementById('eventsTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach(event => {
+                const statusBadge = getEventStatusBadge(event.status);
+                const featuredBadge = event.featured 
+                    ? '<span class="badge badge-success">Featured</span>' 
+                    : '<span class="badge badge-secondary">Regular</span>';
+                
+                const row = `
+                    <tr>
+                        <td><strong>${event.title}</strong></td>
+                        <td>${event.organizer}</td>
+                        <td>${event.category}</td>
+                        <td>${event.date}</td>
+                        <td>${event.venue}</td>
+                        <td>${event.soldTickets}/${event.totalTickets}</td>
+                        <td>${statusBadge}</td>
+                        <td>${featuredBadge}</td>
+                        <td>
+                            <button class="btn-small" onclick="openEventReview(${event.id})">Review</button>
+                            <button class="btn-small btn-danger" onclick="deleteEvent(${event.id})">Delete</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function getEventStatusBadge(status) {
+            const badges = {
+                'draft': '<span class="badge badge-warning">Draft</span>',
+                'published': '<span class="badge badge-success">Published</span>',
+                'cancelled': '<span class="badge badge-danger">Cancelled</span>',
+                'completed': '<span class="badge badge-secondary">Completed</span>'
+            };
+            return badges[status] || status;
+        }
+
+        function openEventReview(eventId) {
+            selectedEventId = eventId;
+            const event = eventsData.find(e => e.id === eventId);
+            
+            document.getElementById('eventDetails').innerHTML = `
+                <div class="detail-grid">
+                    <div><strong>Title:</strong> ${event.title}</div>
+                    <div><strong>Organizer:</strong> ${event.organizer}</div>
+                    <div><strong>Category:</strong> ${event.category}</div>
+                    <div><strong>Date:</strong> ${event.date}</div>
+                    <div><strong>Time:</strong> ${event.time}</div>
+                    <div><strong>Venue:</strong> ${event.venue}, ${event.city}</div>
+                    <div><strong>Total Tickets:</strong> ${event.totalTickets}</div>
+                    <div><strong>Sold Tickets:</strong> ${event.soldTickets}</div>
+                    <div><strong>Revenue:</strong> KES ${event.revenue.toLocaleString()}</div>
+                    <div><strong>Current Status:</strong> ${event.status}</div>
+                </div>
+            `;
+            
+            document.getElementById('eventStatusSelect').value = event.status;
+            document.getElementById('featuredCheck').checked = event.featured;
+            
+            openModal('approveEventModal');
+        }
+
+        function saveEventReview() {
+            const event = eventsData.find(e => e.id === selectedEventId);
+            event.status = document.getElementById('eventStatusSelect').value;
+            event.featured = document.getElementById('featuredCheck').checked;
+            
+            updateStats();
+            displayEvents(eventsData);
+            closeModal('approveEventModal');
+            showNotification('Event updated successfully', 'success');
+        }
+
+        function openAddEventModal() {
+            openModal('addEventModal');
+        }
+
+        function saveNewEvent() {
+            const newEvent = {
+                id: eventsData.length + 1,
+                title: document.getElementById('eventTitle').value,
+                organizer: 'New Organizer',
+                category: document.getElementById('eventCategory').value,
+                date: document.getElementById('eventDate').value,
+                time: document.getElementById('eventStartTime').value + ' - ' + document.getElementById('eventEndTime').value,
+                venue: document.getElementById('eventVenue').value,
+                city: document.getElementById('eventCity').value,
+                status: 'draft',
+                featured: false,
+                totalTickets: 100,
+                soldTickets: 0,
+                revenue: 0
+            };
+            
+            if (newEvent.title && newEvent.date && newEvent.venue) {
+                eventsData.push(newEvent);
+                updateStats();
+                displayEvents(eventsData);
+                closeModal('addEventModal');
+                showNotification('Event created successfully', 'success');
+            } else {
+                showNotification('Please fill all required fields', 'error');
+            }
+        }
+
+        function deleteEvent(eventId) {
+            if (confirm('Are you sure you want to delete this event?')) {
+                eventsData = eventsData.filter(e => e.id !== eventId);
+                updateStats();
+                displayEvents(eventsData);
+                showNotification('Event deleted', 'success');
+            }
+        }
+
+        function filterEvents() {
+            let filtered = eventsData;
+            
+            const status = document.getElementById('filterEventStatus').value;
+            const category = document.getElementById('filterCategory').value;
+            const featured = document.getElementById('filterFeatured').value;
+            
+            if (status) {
+                filtered = filtered.filter(e => e.status === status);
+            }
+            
+            if (category) {
+                filtered = filtered.filter(e => e.category.toLowerCase() === category);
+            }
+            
+            if (featured) {
+                filtered = filtered.filter(e => e.featured);
+            }
+            
+            displayEvents(filtered);
+        }
+
+        document.getElementById('searchEvent').addEventListener('keyup', (e) => {
+            const search = e.target.value.toLowerCase();
+            const filtered = eventsData.filter(ev => 
+                ev.title.toLowerCase().includes(search) || 
+                ev.organizer.toLowerCase().includes(search) ||
+                ev.venue.toLowerCase().includes(search)
+            );
+            displayEvents(filtered);
+        });
+
+        // Initialize
+        loadEvents();
+    </script>
+</body>
+</html>

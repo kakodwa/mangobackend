@@ -1,0 +1,296 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html">🏪 Shops</a></li>
+                <li><a href="products.html" class="active">📦 Products</a></li>
+                <li><a href="properties.html">🏠 Properties</a></li>
+                <li><a href="deliveries.html">🚚 Deliveries</a></li>
+                <li><a href="reviews.html">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Products Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by product name, SKU, or shop...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All Categories</option>
+                        <option>Fashion</option>
+                        <option>Electronics</option>
+                        <option>Home & Garden</option>
+                        <option>Beauty</option>
+                        <option>Sports</option>
+                    </select>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Active</option>
+                        <option>Inactive</option>
+                        <option>Low Stock</option>
+                        <option>Out of Stock</option>
+                    </select>
+                </div>
+
+                <!-- Products Stats -->
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">📊</div>
+                        <div class="stat-info">
+                            <h3>Total Products</h3>
+                            <p class="stat-number">3,456</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">✓</div>
+                        <div class="stat-info">
+                            <h3>Active</h3>
+                            <p class="stat-number">3,200</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">⚠️</div>
+                        <div class="stat-info">
+                            <h3>Low Stock</h3>
+                            <p class="stat-number">156</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #F39C12;">⭐</div>
+                        <div class="stat-info">
+                            <h3>Avg Rating</h3>
+                            <p class="stat-number">4.6</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Products Table -->
+                <div class="section-card">
+                    <h2>📦 Active Products</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Shop</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Rating</th>
+                                <th>Reviews</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Wireless Headphones</td>
+                                <td>SKU-A1234567</td>
+                                <td>Tech Haven</td>
+                                <td><span class="badge badge-blue">Electronics</span></td>
+                                <td>MWK 5,999</td>
+                                <td><span class="badge badge-green">245</span></td>
+                                <td>4.7 ⭐</td>
+                                <td>128</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Summer Dress Collection</td>
+                                <td>SKU-F2345678</td>
+                                <td>Style Boutique</td>
+                                <td><span class="badge badge-orange">Fashion</span></td>
+                                <td>MWK 3,499</td>
+                                <td><span class="badge badge-green">89</span></td>
+                                <td>4.9 ⭐</td>
+                                <td>203</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Office Desk Lamp</td>
+                                <td>SKU-H3456789</td>
+                                <td>Home Essentials</td>
+                                <td><span class="badge badge-green">Home & Garden</span></td>
+                                <td>MWK 1,299</td>
+                                <td><span class="badge badge-yellow">15</span></td>
+                                <td>4.4 ⭐</td>
+                                <td>67</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Organic Face Cream</td>
+                                <td>SKU-B4567890</td>
+                                <td>Beauty Salon Pro</td>
+                                <td><span class="badge" style="background-color: #FCE7E6; color: #E74C3C;">Beauty</span></td>
+                                <td>MWK 2,899</td>
+                                <td><span class="badge badge-green">156</span></td>
+                                <td>4.8 ⭐</td>
+                                <td>312</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Running Shoes Pro</td>
+                                <td>SKU-S5678901</td>
+                                <td>Sports Central</td>
+                                <td><span class="badge" style="background-color: #D1ECF1; color: #17A2B8;">Sports</span></td>
+                                <td>MWK 8,999</td>
+                                <td><span class="badge badge-green">78</span></td>
+                                <td>4.6 ⭐</td>
+                                <td>145</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Deactivate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Low Stock Alert -->
+                <div class="section-card">
+                    <h2>⚠️ Low Stock Products</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>SKU</th>
+                                <th>Current Stock</th>
+                                <th>Min Required</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Premium Keyboard</td>
+                                <td>SKU-P6789012</td>
+                                <td>5</td>
+                                <td>20</td>
+                                <td><span class="badge badge-red">Critical</span></td>
+                                <td>
+                                    <button class="btn-small btn-orange">Notify Seller</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Winter Jacket</td>
+                                <td>SKU-W7890123</td>
+                                <td>12</td>
+                                <td>25</td>
+                                <td><span class="badge badge-yellow">Low</span></td>
+                                <td>
+                                    <button class="btn-small btn-orange">Notify Seller</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Phone Case Bundle</td>
+                                <td>SKU-C8901234</td>
+                                <td>3</td>
+                                <td>15</td>
+                                <td><span class="badge badge-red">Critical</span></td>
+                                <td>
+                                    <button class="btn-small btn-orange">Notify Seller</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Out of Stock Products -->
+                <div class="section-card">
+                    <h2>🚫 Out of Stock Products</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Product Name</th>
+                                <th>Shop</th>
+                                <th>Out Since</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Vintage Camera</td>
+                                <td>Tech Haven</td>
+                                <td>2024-01-10</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">Auto Deactivate</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Limited Edition Bag</td>
+                                <td>Style Boutique</td>
+                                <td>2024-01-12</td>
+                                <td>
+                                    <button class="btn-small btn-secondary">Auto Deactivate</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

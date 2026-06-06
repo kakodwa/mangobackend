@@ -1,0 +1,52 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Marketplace</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css'%}">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{% url 'admin_app:dashboard' %}" class="active">📊 Dashboard</a></li>
+                <li><a href="{% url 'admin_app:users_list' %}">👥 Users</a></li>
+                <li><a href="{% url 'admin_app:shops_list' %}">🏪 Shops</a></li>
+                <li><a href="{% url 'analytics_dashboard' %}">📦 Products</a></li>
+                <li><a href="{% url 'admin_app:properties_list' %}">🏠 Properties</a></li>
+                <li><a href="{% url 'admin_app:deliveries_list' %}">🚚 Deliveries</a></li>
+                <li><a href="{% url 'admin_app:reviews_list' %}">⭐ Reviews</a></li>
+                <li><a href="{% url 'admin_app:lodges_list' %}">🏨 Lodges</a></li>
+                <li><a href="{% url 'admin_app:rooms_list' %}">🛏️ Rooms</a></li>
+                <li><a href="{% url 'admin_app:bookings_list' %}">📅 Bookings</a></li>
+                <li><a href="{% url 'admin_app:events_list' %}">🎪 Events</a></li>
+                <li><a href="{% url 'admin_app:tickets_list' %}">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Dashboard Overview</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                {% block content %}
+                {% endblock %}
+            </section>
+        </div>
+    </div>
+</body>
+</html>
+

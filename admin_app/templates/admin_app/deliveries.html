@@ -1,0 +1,336 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deliveries Management - Admin Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html">🏪 Shops</a></li>
+                <li><a href="products.html">📦 Products</a></li>
+                <li><a href="properties.html">🏠 Properties</a></li>
+                <li><a href="deliveries.html" class="active">🚚 Deliveries</a></li>
+                <li><a href="reviews.html">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Deliveries Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
+            <section class="content">
+                <!-- Search & Filter -->
+                <div class="search-filter-bar">
+                    <div class="search-box">
+                        <input type="text" placeholder="Search by order, delivery code, or address...">
+                    </div>
+                    <select class="filter-select">
+                        <option>All Status</option>
+                        <option>Pending</option>
+                        <option>Assigned</option>
+                        <option>Picked Up</option>
+                        <option>In Transit</option>
+                        <option>Delivered</option>
+                        <option>Failed</option>
+                    </select>
+                </div>
+
+                <!-- Deliveries Stats -->
+                <div class="stats-grid" style="margin-bottom: 30px;">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">📦</div>
+                        <div class="stat-info">
+                            <h3>Pending</h3>
+                            <p class="stat-number">28</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #F39C12;">🚚</div>
+                        <div class="stat-info">
+                            <h3>In Transit</h3>
+                            <p class="stat-number">42</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">✓</div>
+                        <div class="stat-info">
+                            <h3>Delivered</h3>
+                            <p class="stat-number">1,245</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #E74C3C;">⚠️</div>
+                        <div class="stat-info">
+                            <h3>Failed</h3>
+                            <p class="stat-number">8</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Deliveries -->
+                <div class="section-card">
+                    <h2>📦 Pending Deliveries</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Delivery Code</th>
+                                <th>Address</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Priority</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-2024-001</td>
+                                <td>DLV-A1B2C3</td>
+                                <td>123 Main Street, Lilongwe</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                                <td><span class="badge badge-orange">High</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Assign</button>
+                                        <button class="btn-small btn-secondary">Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-002</td>
+                                <td>DLV-D4E5F6</td>
+                                <td>456 Oak Avenue, Blantyre</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                                <td><span class="badge badge-green">Normal</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Assign</button>
+                                        <button class="btn-small btn-secondary">Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-003</td>
+                                <td>DLV-G7H8I9</td>
+                                <td>789 Pine Road, Mzuzu</td>
+                                <td>2024-01-14</td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                                <td><span class="badge badge-orange">High</span></td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Assign</button>
+                                        <button class="btn-small btn-secondary">Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Assigned Deliveries -->
+                <div class="section-card">
+                    <h2>📍 Assigned & In Transit</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Delivery Person</th>
+                                <th>Address</th>
+                                <th>Assigned Date</th>
+                                <th>Status</th>
+                                <th>Pickup Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-2024-004</td>
+                                <td>Samuel Phiri</td>
+                                <td>321 Elm Street, Lilongwe</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-blue">Assigned</span></td>
+                                <td>-</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Track</button>
+                                        <button class="btn-small btn-orange">Update</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-005</td>
+                                <td>David Malawi</td>
+                                <td>654 Maple Lane, Blantyre</td>
+                                <td>2024-01-14</td>
+                                <td><span class="badge badge-orange">In Transit</span></td>
+                                <td>2024-01-15 09:30</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Track</button>
+                                        <button class="btn-small btn-orange">Update</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-006</td>
+                                <td>John Banda</td>
+                                <td>987 Cedar Court, Mzuzu</td>
+                                <td>2024-01-14</td>
+                                <td><span class="badge badge-orange">In Transit</span></td>
+                                <td>2024-01-14 14:15</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Track</button>
+                                        <button class="btn-small btn-orange">Update</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-007</td>
+                                <td>Grace Kachale</td>
+                                <td>246 Birch Boulevard, Lilongwe</td>
+                                <td>2024-01-13</td>
+                                <td><span class="badge badge-blue">Picked Up</span></td>
+                                <td>2024-01-13 10:45</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green">Track</button>
+                                        <button class="btn-small btn-orange">Update</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Delivered Deliveries -->
+                <div class="section-card">
+                    <h2>✅ Delivered Deliveries</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Delivery Person</th>
+                                <th>Delivered To</th>
+                                <th>Delivered Date</th>
+                                <th>Delivery Code Used</th>
+                                <th>Escrow Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-2024-008</td>
+                                <td>Peter Mubita</td>
+                                <td>Customer Name</td>
+                                <td>2024-01-15</td>
+                                <td>✓ Used</td>
+                                <td><span class="badge badge-green">Released</span></td>
+                                <td>
+                                    <button class="btn-small btn-secondary">View</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-009</td>
+                                <td>Mary Chipoko</td>
+                                <td>Recipient Name</td>
+                                <td>2024-01-14</td>
+                                <td>✓ Used</td>
+                                <td><span class="badge badge-green">Released</span></td>
+                                <td>
+                                    <button class="btn-small btn-secondary">View</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-010</td>
+                                <td>Lucy Nkhata</td>
+                                <td>Buyer Name</td>
+                                <td>2024-01-13</td>
+                                <td>✓ Used</td>
+                                <td><span class="badge badge-green">Released</span></td>
+                                <td>
+                                    <button class="btn-small btn-secondary">View</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Failed Deliveries -->
+                <div class="section-card">
+                    <h2>❌ Failed Deliveries</h2>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Delivery Person</th>
+                                <th>Address</th>
+                                <th>Failed Date</th>
+                                <th>Reason</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#ORD-2024-011</td>
+                                <td>Samuel Phiri</td>
+                                <td>Customer not available</td>
+                                <td>2024-01-12</td>
+                                <td>Address not found</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-orange">Reassign</button>
+                                        <button class="btn-small btn-secondary">Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>#ORD-2024-012</td>
+                                <td>David Malawi</td>
+                                <td>Customer refused delivery</td>
+                                <td>2024-01-11</td>
+                                <td>Customer not home</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-orange">Reassign</button>
+                                        <button class="btn-small btn-secondary">Details</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

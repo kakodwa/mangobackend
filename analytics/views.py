@@ -9,6 +9,69 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 
+from django.shortcuts import render
+from django.db.models import Count
+from django.db.models.functions import TruncDay
+from django.utils import timezone
+import datetime
+import json
+
+
+def analytics_dashboard_page(request):
+    """
+    Renders the HTML analytics dashboard interface template view 
+    pre-loaded with aggregated AppEvent metrics and GPS tracking data coordinates.
+    """
+    # 1. Platform / Device Type Distribution
+    device_metrics = list(AppEvent.objects.values('device_type')
+                          .annotate(total=Count('id'))
+                          .order_by('-total'))
+    
+    # 2. Top Engagement Features
+    event_metrics = list(AppEvent.objects.values('event_name')
+                         .annotate(total=Count('id'))
+                         .order_by('-total')[:7])
+    
+    # 3. Timeline Sequence Trends (Last 7 Days)
+    one_week_ago = timezone.now() - datetime.timedelta(days=7)
+    timeline_metrics = list(AppEvent.objects.filter(timestamp__gte=one_week_ago)
+                            .annotate(day=TruncDay('timestamp'))
+                            .values('day')
+                            .annotate(total=Count('id'))
+                            .order_by('day'))
+    
+    for item in timeline_metrics:
+        item['day'] = item['day'].strftime('%b %d')
+
+    # 4. GPS Permission Splits
+    gps_allowed = AppEvent.objects.filter(latitude__isnull=False, longitude__isnull=False).count()
+    gps_denied = AppEvent.objects.filter(latitude__isnull=True).count()
+
+    # 5. NEW: GPS Coordinate Hot Spot Extraction
+    # Pulls all events containing valid location telemetry fields
+    gps_points = list(AppEvent.objects.filter(
+        latitude__isnull=False, 
+        longitude__isnull=False
+    ).values_list('latitude', 'longitude'))
+
+    # Consolidate all data pipelines
+    chart_data = {
+        'devices': device_metrics,
+        'events': event_metrics,
+        'timeline': timeline_metrics,
+        'gps': {
+            'allowed': gps_allowed,
+            'denied': gps_denied
+        },
+        'locations': gps_points # Nested structure format: [[lat1, lng1], [lat2, lng2], ...]
+    }
+
+    context = {
+        'chart_data_json': json.dumps(chart_data)
+    }
+
+    return render(request, 'analytics/analytics_dashboard.html', context)
+
 
 class LogEventView(APIView):
     def post(self, request):

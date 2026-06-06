@@ -1,0 +1,105 @@
+{% extends 'admin_app/base.html' %}
+{% load static %}
+
+        <!-- Main Content -->
+{% block content %}
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">👥</div>
+                        <div class="stat-info">
+                            <h3>Total Users</h3>
+                            <p class="stat-number">{{total_users}}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">🏪</div>
+                        <div class="stat-info">
+                            <h3>Active Shops</h3>
+                            <p class="stat-number">{{total_shops}}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #FF8C00;">📦</div>
+                        <div class="stat-info">
+                            <h3>Total Products</h3>
+                            <p class="stat-number">{{total_products}}</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background-color: #2ECC71;">🚚</div>
+                        <div class="stat-info">
+                            <h3>In Transit</h3>
+                            <p class="stat-number">{{pending_deliveries}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pending Approvals Section -->
+                <div class="section-card">
+                    <h2>🔔 Pending Approvals</h2>
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>phone</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        	{% for s in recent_shops %}
+                            <tr>
+                                <td><span class="badge badge-orange">{{s.name}}</span></td>
+                                <td>{{s.category}}</td>
+                                <td>{{s.phone_number}}</td>
+                                <td><a href="#" class="btn-small btn-green">Review</a></td>
+                            </tr>
+                            {% endfor%}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="section-card">
+                    <h2>📈 Recent Activity</h2>
+                    <table class="dashboard-table">
+                        <thead>
+                            <tr>
+                                <th>Activity</th>
+                                <th>User</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>New Shop Registration</td>
+                                <td>John Banda</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td>Product Listed</td>
+                                <td>Mary Chipoko</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-green">Active</span></td>
+                            </tr>
+                            <tr>
+                                <td>Delivery Completed</td>
+                                <td>Samuel Phiri</td>
+                                <td>2024-01-15</td>
+                                <td><span class="badge badge-green">Delivered</span></td>
+                            </tr>
+                            <tr>
+                                <td>User Verified</td>
+                                <td>Grace Kachale</td>
+                                <td>2024-01-14</td>
+                                <td><span class="badge badge-green">Verified</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+{% endblock %}

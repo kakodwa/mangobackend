@@ -57,6 +57,7 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("api/feed/", include("feed_engine.urls")),
+    path("", include("admin_app.urls")),
     
     # =================================================================
     # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
