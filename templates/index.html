@@ -1,14 +1,12 @@
 {% load static %}
-
 <!DOCTYPE html>
 <html>
 <head>
   <base href="{% static '' %}">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
 
-  <title>{% if share_title %}{{ share_title }}{% else %}MangoHub{% endif %}</title>
+  <title>{% if share_title %}{{ share_title }}{% else %}MangoHub Marketplace{% endif %}</title>
   <meta name="description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
 
   <meta property="og:type" content="website">
@@ -28,7 +26,6 @@
   <link rel="apple-touch-icon" href="{% static 'icons/Icon-192.png' %}">
 
   <link rel="icon" type="image/png" href="{% static 'favicon.png' %}"/>
-
   <link rel="manifest" href="{% static 'manifest.json' %}">
 </head>
 <body>
