@@ -15,6 +15,7 @@ from realestate.views import PropertyViewSet
 from wallet.views import WalletViewSet
 from django.conf import settings
 from django.conf.urls.static import static
+from mangohub import views
 
 # API Router
 router = DefaultRouter()
@@ -66,7 +67,7 @@ urlpatterns = [
     # =================================================================
     # This remains at the bottom so it handles automated ViewSet actions (like initiate_payment)
     path('api/', include(router.urls)),
-    re_path(r'^.*$', TemplateView.as_view(template_name='index.html'), name='flutter-web'),
+    re_path(r'^.*$', views.serve_flutter_web_app, name='flutter_web_catchall'),
 ]
 
 if settings.DEBUG:
