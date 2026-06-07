@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
+from django.views.generic import TemplateView
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from users.views import UserViewSet
@@ -57,13 +58,15 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("api/feed/", include("feed_engine.urls")),
-    path("", include("admin_app.urls")),
+    path("admin_app", include("admin_app.urls")),
+    #path("", include("mangohub.urls")),
     
     # =================================================================
     # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
     # =================================================================
     # This remains at the bottom so it handles automated ViewSet actions (like initiate_payment)
     path('api/', include(router.urls)),
+    re_path(r'^.*$', TemplateView.as_view(template_name='index.html'), name='flutter-web'),
 ]
 
 if settings.DEBUG:
