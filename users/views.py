@@ -7,35 +7,39 @@ from .serializers import UserSerializer, UserDetailSerializer, UserRegisterSeria
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    """
+    Highly secure ViewSet protecting user account profiles from unauthorized exposure.
+    """
+    # 🛡️ Limit standard list/retrieve actions to return ONLY the logged-in user's data
+    queryset = User.objects.none() 
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    
+    # 🛡️ Default fall-through access policy: completely deny unauthenticated requests
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """
+        Ensures authenticated users can only view their own record instance.
+        """
+        if self.request.user and self.request.user.is_authenticated:
+            return User.objects.filter(id=self.request.user.id)
+        return User.objects.none()
 
     def get_serializer_class(self):
-        if self.action == 'create':
+        if self.action == 'create' or self.action == 'register':
             return UserRegisterSerializer
-        elif self.action == 'retrieve':
+        elif self.action == 'retrieve' or self.action == 'me':
             return UserDetailSerializer
         return UserSerializer
 
+    # 🛡️ Explicitly open ONLY the registration endpoint for public entry
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def register(self, request):
-
-        print("\n🔥 RAW REQUEST DATA:")
-        print(request.data)
-
+        # ❌ REMOVED: Raw print statements leaking text passwords into environment stdout logs
         serializer = UserRegisterSerializer(data=request.data)
 
         if serializer.is_valid():
-
-            print("\n✅ VALIDATED DATA:")
-            print(serializer.validated_data)
-
             user = serializer.save()
-
-            print("\n👤 SAVED USER PHONE:")
-            print(user.phone_number)
-
 
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -44,7 +48,6 @@ class UserViewSet(viewsets.ModelViewSet):
                 'access': str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
             
-        print("REGISTER ERROR:", serializer.errors)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
@@ -52,7 +55,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserDetailSerializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['put'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])
     def update_profile(self, request):
         user = request.user
         serializer = UserSerializer(user, data=request.data, partial=True)
