@@ -9,6 +9,7 @@ from products.views import ProductViewSet, BannerViewSet
 from orders.views import OrderViewSet
 from payments.views import PaymentViewSet, paychangu_webhook, payment_return_view
 from hospitality.views import LodgeViewSet, RoomViewSet, BookingViewSet, AmenityViewSet
+from mangohub.views import ReviewViewSet
 from events.views import EventViewSet, TicketViewSet, TicketValidationViewSet, TicketCheckInAPIView
 from delivery.views import DeliveryViewSet
 from realestate.views import PropertyViewSet
@@ -34,6 +35,7 @@ router.register(r'amenities', AmenityViewSet, basename='amenities')
 router.register(r'bookings', BookingViewSet, basename='bookings')
 router.register(r'events', EventViewSet, basename='events')
 router.register(r'tickets', TicketViewSet, basename='tickets')
+router.register(r'reviews', ReviewViewSet, basename='reviews')
 router.register(r'ticket-validation', TicketValidationViewSet, basename='ticket-validation')
 
 urlpatterns = [

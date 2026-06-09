@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from mangohub.serializers import ReviewSerializer
 from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite
 
 
@@ -23,6 +24,7 @@ class ProductSerializer(serializers.ModelSerializer):
     shop_name = serializers.CharField(source='shop.name', read_only=True)
     owner_id = serializers.IntegerField(source='shop.owner.id', read_only=True)
     shop_district = serializers.CharField(source='shop.district',read_only=True,)
+    reviews = ReviewSerializer(many=True)
     shop_phone_number = serializers.CharField(
         source='shop.phone_number',
         read_only=True
@@ -37,7 +39,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'price', 'original_price', 'discount_percentage',
             'stock', 'sku', 'is_active','shop_phone_number',
             'rating', 'total_reviews',
-            'images', 'created_at','owner_id'
+            'images', 'created_at','owner_id','reviews'
         ]
         read_only_fields = ['id', 'shop', 'created_at']
 

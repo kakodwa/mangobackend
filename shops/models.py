@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.text import slugify
 from users.models import User
+from django.contrib.contenttypes.fields import GenericRelation
+from mangohub.models import Review
 
 class Shop(models.Model):
     SHOP_STATUS_CHOICES = (
@@ -14,6 +16,7 @@ class Shop(models.Model):
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(unique=True)
     description = models.TextField()
+    reviews = GenericRelation(Review)
     logo = models.ImageField(upload_to='shop_logos/')
     banner = models.ImageField(upload_to='shop_banners/', null=True, blank=True)
     category = models.CharField(max_length=100)
@@ -35,6 +38,7 @@ class Shop(models.Model):
     
     # Ratings
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    reviews = GenericRelation(Review)
     total_reviews = models.IntegerField(default=0)
     
     # Timestamps

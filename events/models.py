@@ -7,6 +7,8 @@ from django.db import models
 from users.models import User
 from django.core.files.base import ContentFile
 from django.core.signing import TimestampSigner
+from django.contrib.contenttypes.fields import GenericRelation
+from mangohub.models import Review
 
 signer = TimestampSigner()
 
@@ -70,6 +72,10 @@ class Event(models.Model):
     event_date = models.DateField()
     start_time = models.TimeField()
     end_time = models.TimeField()
+    
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    reviews = GenericRelation(Review)
+    total_reviews = models.IntegerField(default=0)
 
     banner = models.ImageField(upload_to='event_banners/')
 

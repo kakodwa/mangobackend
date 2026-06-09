@@ -1,10 +1,15 @@
 # views.py (Django Backend)
+from django.contrib.contenttypes.models import ContentType
 from django.shortcuts import render
 from hospitality.models import Lodge
 from events.models import Event
 from products.models import Product
 from realestate.models import Property
 from shops.models import Shop
+
+from rest_framework import viewsets, permissions
+from .models import Review
+from .serializers import ReviewSerializer
 
 def get_meta_from_url(request, full_path, path_token, model_class, title_field='name', desc_field='description', image_field='image', price_field=None, currency_field=None):
     """
@@ -98,3 +103,28 @@ def serve_flutter_web_app(request):
         context.update({k: v for k, v in meta_data.items() if v is not None})
 
     return render(request, "index.html", context)
+
+
+
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        queryset = Review.objects.all()
+        target_type = self.request.query_params.get('content_type')
+        target_id = self.request.query_params.get('object_id')
+
+        if target_type and target_id:
+            try:
+                content_type = ContentType.objects.get(model=target_type.lower())
+                queryset = queryset.filter(content_type=content_type, object_id=target_id)
+            except ContentType.DoesNotExist:
+                return Review.objects.none()
+
+        return queryset
+
+    # 🛠️ THE FIX: Pass the user explicitly into the save handler
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

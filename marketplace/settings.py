@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'feed_engine',
     'analytics',
     'admin_app',
+    'mangohub',
 
     'cloudinary_storage',
     'cloudinary',

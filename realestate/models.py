@@ -1,6 +1,8 @@
 from django.db import models
 from users.models import User
 from django.utils.text import slugify
+from mangohub.models import Review
+from django.contrib.contenttypes.fields import GenericRelation
 import uuid
 
 class Property(models.Model):
@@ -54,6 +56,10 @@ class Property(models.Model):
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    reviews = GenericRelation(Review)
+    total_reviews = models.IntegerField(default=0)
 
     class Meta:
         ordering = ['-created_at']

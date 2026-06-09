@@ -8,7 +8,8 @@ from django.db import models
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.signing import TimestampSigner
-
+from mangohub.models import Review
+from django.contrib.contenttypes.fields import GenericRelation
 
 
 signer = TimestampSigner()
@@ -59,6 +60,10 @@ class Lodge(models.Model):
 
     is_verified = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    
+    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+    reviews = GenericRelation(Review)
+    total_reviews = models.IntegerField(default=0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
