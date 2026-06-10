@@ -1,36 +1,10 @@
 {% extends 'admin_app/base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shops Management - Admin Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+
+{% block content %}
     <div class="container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar">
-            <div class="logo">
-                <h2>Admin Panel</h2>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html">📊 Dashboard</a></li>
-                <li><a href="users.html">👥 Users</a></li>
-                <li><a href="shops.html" class="active">🏪 Shops</a></li>
-                <li><a href="products.html">📦 Products</a></li>
-                <li><a href="properties.html">🏠 Properties</a></li>
-                <li><a href="deliveries.html">🚚 Deliveries</a></li>
-                <li><a href="reviews.html">⭐ Reviews</a></li>
-                <li><a href="lodges.html">🏨 Lodges</a></li>
-                <li><a href="rooms.html">🛏️ Rooms</a></li>
-                <li><a href="bookings.html">📅 Bookings</a></li>
-                <li><a href="events.html">🎪 Events</a></li>
-                <li><a href="tickets.html">🎫 Tickets</a></li>
-            </ul>
-        </nav>
+       
 
         <!-- Main Content -->
         <div class="main-content">
@@ -248,7 +222,7 @@
             </section>
         </div>
     </div>
-
+{% endblock %}
     <!-- Approval Modal -->
     <div id="approvalModal" class="modal">
         <div class="modal-content">
@@ -313,6 +287,4 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
-</html>
+ 

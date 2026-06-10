@@ -2,36 +2,10 @@
 {% load static %}
 
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products Management - Admin Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
+
+{% block content %}
     <div class="container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar">
-            <div class="logo">
-                <h2>Admin Panel</h2>
-            </div>
-            <ul class="nav-menu">
-                <li><a href="index.html">📊 Dashboard</a></li>
-                <li><a href="users.html">👥 Users</a></li>
-                <li><a href="shops.html">🏪 Shops</a></li>
-                <li><a href="products.html" class="active">📦 Products</a></li>
-                <li><a href="properties.html">🏠 Properties</a></li>
-                <li><a href="deliveries.html">🚚 Deliveries</a></li>
-                <li><a href="reviews.html">⭐ Reviews</a></li>
-                <li><a href="lodges.html">🏨 Lodges</a></li>
-                <li><a href="rooms.html">🛏️ Rooms</a></li>
-                <li><a href="bookings.html">📅 Bookings</a></li>
-                <li><a href="events.html">🎪 Events</a></li>
-                <li><a href="tickets.html">🎫 Tickets</a></li>
-            </ul>
-        </nav>
+  
 
         <!-- Main Content -->
         <div class="main-content">
@@ -46,26 +20,7 @@
 
             <section class="content">
                 <!-- Search & Filter -->
-                <div class="search-filter-bar">
-                    <div class="search-box">
-                        <input type="text" placeholder="Search by product name, SKU, or shop...">
-                    </div>
-                    <select class="filter-select">
-                        <option>All Categories</option>
-                        <option>Fashion</option>
-                        <option>Electronics</option>
-                        <option>Home & Garden</option>
-                        <option>Beauty</option>
-                        <option>Sports</option>
-                    </select>
-                    <select class="filter-select">
-                        <option>All Status</option>
-                        <option>Active</option>
-                        <option>Inactive</option>
-                        <option>Low Stock</option>
-                        <option>Out of Stock</option>
-                    </select>
-                </div>
+     
 
                 <!-- Products Stats -->
                 <div class="stats-grid" style="margin-bottom: 30px;">
@@ -290,7 +245,4 @@
             </section>
         </div>
     </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
+{% endblock %}

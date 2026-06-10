@@ -18,7 +18,7 @@
                 <li><a href="{% url 'admin_app:dashboard' %}" class="active">📊 Dashboard</a></li>
                 <li><a href="{% url 'admin_app:users_list' %}">👥 Users</a></li>
                 <li><a href="{% url 'admin_app:shops_list' %}">🏪 Shops</a></li>
-                <li><a href="{% url 'analytics_dashboard' %}">📦 Products</a></li>
+                <li><a href="{% url 'admin_app:products_list' %}">📦 Products</a></li>
                 <li><a href="{% url 'admin_app:properties_list' %}">🏠 Properties</a></li>
                 <li><a href="{% url 'admin_app:deliveries_list' %}">🚚 Deliveries</a></li>
                 <li><a href="{% url 'admin_app:reviews_list' %}">⭐ Reviews</a></li>
@@ -30,22 +30,9 @@
             </ul>
         </nav>
 
-        <!-- Main Content -->
-        <div class="main-content">
-            <header class="top-bar">
-                <button class="menu-toggle" id="menuToggle">☰</button>
-                <h1>Dashboard Overview</h1>
-                <div class="user-profile">
-                    <span>Admin User</span>
-                    <img src="https://via.placeholder.com/40" alt="Profile">
-                </div>
-            </header>
-
-            <section class="content">
-                {% block content %}
-                {% endblock %}
-            </section>
-        </div>
+        {% block content %}
+        {% endblock %}
+ 
     </div>
 </body>
 </html>

@@ -1,37 +1,9 @@
 {% extends 'admin_app/base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tickets Management - Admin Dashboard</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="dashboard-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="logo">
-                <h2>MarketHub</h2>
-                <p>Admin Panel</p>
-            </div>
-            <nav class="nav-menu">
-                <a href="index.html" class="nav-item">Dashboard</a>
-                <a href="users.html" class="nav-item">Users</a>
-                <a href="shops.html" class="nav-item">Shops</a>
-                <a href="products.html" class="nav-item">Products</a>
-                <a href="properties.html" class="nav-item">Properties</a>
-                <a href="deliveries.html" class="nav-item">Deliveries</a>
-                <a href="reviews.html" class="nav-item">Reviews</a>
-                <a href="lodges.html" class="nav-item">Lodges</a>
-                <a href="rooms.html" class="nav-item">Rooms</a>
-                <a href="bookings.html" class="nav-item">Bookings</a>
-                <a href="events.html" class="nav-item">Events</a>
-                <a href="tickets.html" class="nav-item active">Tickets</a>
-            </nav>
-        </aside>
+
+{% block content %}
+
 
         <!-- Main Content -->
         <main class="main-content">
@@ -110,7 +82,7 @@
                 </table>
             </div>
         </main>
-    </div>
+
 
     <!-- View Ticket Modal -->
     <div id="viewTicketModal" class="modal">
@@ -456,5 +428,4 @@
         // Initialize
         loadTickets();
     </script>
-</body>
-</html>
+{% endblock %}

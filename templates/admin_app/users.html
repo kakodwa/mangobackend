@@ -1,6 +1,20 @@
 {% extends 'admin_app/base.html' %}
 {% load static %}
+
+
 {% block content %}
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Users Management</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
+
             <section class="content">
                 <!-- Search & Filter -->
                 <div class="search-filter-bar">
@@ -36,22 +50,101 @@
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>User Type</th>
-                                <th>District</th>
+                                <th>Status</th>
                                 <th>Verified</th>
                                 <th>Joined</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {% for u in users %}
                             <tr>
-                                <td>{{u.get_full_name}}</td>
-                                <td>{{u.email}}</td>
-                                <td>{{u.phone_number}}</td>
-                                <td><span class="badge badge-blue">{{u.user_type}}</span></td>
-                                <td><span class="badge badge-green">{{u.district}}</span></td>
-                                <td><span class="badge badge-green">✓{{u.is_verified}}</span></td>
-                                <td>{{u.date_joined}}</td>
+                                <td>John Banda</td>
+                                <td>john.banda@email.com</td>
+                                <td>+265881234567</td>
+                                <td><span class="badge badge-blue">Customer</span></td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td><span class="badge badge-green">✓ Yes</span></td>
+                                <td>2024-01-10</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('John Banda')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Mary Chipoko</td>
+                                <td>mary.chipoko@email.com</td>
+                                <td>+265882223456</td>
+                                <td><span class="badge badge-orange">Shop Owner</span></td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                                <td>2024-01-12</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('Mary Chipoko')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-secondary">Verify</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Samuel Phiri</td>
+                                <td>samuel.phiri@email.com</td>
+                                <td>+265883334567</td>
+                                <td><span class="badge badge-green">Delivery Person</span></td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td><span class="badge badge-green">✓ Yes</span></td>
+                                <td>2024-01-05</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('Samuel Phiri')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Grace Kachale</td>
+                                <td>grace.kachale@email.com</td>
+                                <td>+265884445678</td>
+                                <td><span class="badge badge-blue">Property Owner</span></td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td><span class="badge badge-green">✓ Yes</span></td>
+                                <td>2024-01-08</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('Grace Kachale')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-danger">Suspend</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Peter Mubita</td>
+                                <td>peter.mubita@email.com</td>
+                                <td>+265885556789</td>
+                                <td><span class="badge badge-orange">Event Organizer</span></td>
+                                <td><span class="badge badge-red">Inactive</span></td>
+                                <td><span class="badge badge-yellow">Pending</span></td>
+                                <td>2023-12-20</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-small btn-green" onclick="viewUserDetails('Peter Mubita')">View</button>
+                                        <button class="btn-small btn-orange">Edit</button>
+                                        <button class="btn-small btn-secondary">Activate</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Lucy Nkhata</td>
+                                <td>lucy.nkhata@email.com</td>
+                                <td>+265886667890</td>
+                                <td><span class="badge badge-blue">Customer</span></td>
+                                <td><span class="badge badge-green">Active</span></td>
+                                <td><span class="badge badge-green">✓ Yes</span></td>
+                                <td>2024-01-11</td>
                                 <td>
                                     <div class="action-buttons">
                                         <button class="btn-small btn-green" onclick="viewUserDetails('Lucy Nkhata')">View</button>
@@ -60,7 +153,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -74,8 +166,8 @@
                     <button class="btn btn-secondary">Next →</button>
                 </div>
             </section>
-       {% endblock %}
-
+        </div>
+  {% endblock %}
     <!-- User Details Modal -->
     <div id="userModal" class="modal">
         <div class="modal-content">
@@ -91,6 +183,3 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
-</body>
-</html>

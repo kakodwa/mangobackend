@@ -19,7 +19,7 @@ from django.contrib import messages
 from django.views import View
 
 class AdminLoginView(View):
-    template_name = 'admin/admin_login.html'
+    template_name = 'admin_app/admin_login.html'
 
     def get(self, request):
         # If already authenticated as staff, skip login and go to dashboard

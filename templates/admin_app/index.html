@@ -1,37 +1,74 @@
-{% extends 'admin_app/base.html' %}
-{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Marketplace</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <h2>Admin Panel</h2>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="active">📊 Dashboard</a></li>
+                <li><a href="users.html">👥 Users</a></li>
+                <li><a href="shops.html">🏪 Shops</a></li>
+                <li><a href="products.html">📦 Products</a></li>
+                <li><a href="properties.html">🏠 Properties</a></li>
+                <li><a href="deliveries.html">🚚 Deliveries</a></li>
+                <li><a href="reviews.html">⭐ Reviews</a></li>
+                <li><a href="lodges.html">🏨 Lodges</a></li>
+                <li><a href="rooms.html">🛏️ Rooms</a></li>
+                <li><a href="bookings.html">📅 Bookings</a></li>
+                <li><a href="events.html">🎪 Events</a></li>
+                <li><a href="tickets.html">🎫 Tickets</a></li>
+            </ul>
+        </nav>
 
         <!-- Main Content -->
-{% block content %}
+        <div class="main-content">
+            <header class="top-bar">
+                <button class="menu-toggle" id="menuToggle">☰</button>
+                <h1>Dashboard Overview</h1>
+                <div class="user-profile">
+                    <span>Admin User</span>
+                    <img src="https://via.placeholder.com/40" alt="Profile">
+                </div>
+            </header>
 
+            <section class="content">
                 <!-- Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-icon" style="background-color: #FF8C00;">👥</div>
                         <div class="stat-info">
                             <h3>Total Users</h3>
-                            <p class="stat-number">{{total_users}}</p>
+                            <p class="stat-number">1,250</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background-color: #2ECC71;">🏪</div>
                         <div class="stat-info">
                             <h3>Active Shops</h3>
-                            <p class="stat-number">{{total_shops}}</p>
+                            <p class="stat-number">128</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background-color: #FF8C00;">📦</div>
                         <div class="stat-info">
                             <h3>Total Products</h3>
-                            <p class="stat-number">{{total_products}}</p>
+                            <p class="stat-number">3,456</p>
                         </div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-icon" style="background-color: #2ECC71;">🚚</div>
                         <div class="stat-info">
                             <h3>In Transit</h3>
-                            <p class="stat-number">{{pending_deliveries}}</p>
+                            <p class="stat-number">42</p>
                         </div>
                     </div>
                 </div>
@@ -44,19 +81,29 @@
                             <tr>
                                 <th>Type</th>
                                 <th>Name</th>
-                                <th>phone</th>
+                                <th>Submitted</th>
                                 <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
-                        	{% for s in recent_shops %}
                             <tr>
-                                <td><span class="badge badge-orange">{{s.name}}</span></td>
-                                <td>{{s.category}}</td>
-                                <td>{{s.phone_number}}</td>
-                                <td><a href="#" class="btn-small btn-green">Review</a></td>
+                                <td><span class="badge badge-orange">Shop</span></td>
+                                <td>Fashion Hub Store</td>
+                                <td>2024-01-15</td>
+                                <td><a href="shops.html" class="btn-small btn-green">Review</a></td>
                             </tr>
-                            {% endfor%}
+                            <tr>
+                                <td><span class="badge badge-green">Property</span></td>
+                                <td>Modern Apartment - Blantyre</td>
+                                <td>2024-01-14</td>
+                                <td><a href="properties.html" class="btn-small btn-green">Review</a></td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge badge-orange">Shop</span></td>
+                                <td>Electronics Plus</td>
+                                <td>2024-01-13</td>
+                                <td><a href="shops.html" class="btn-small btn-green">Review</a></td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -101,5 +148,8 @@
                         </tbody>
                     </table>
                 </div>
-
-{% endblock %}
+            </section>
+        </div>
+    </div>
+</body>
+</html>

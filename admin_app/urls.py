@@ -6,7 +6,7 @@ app_name = 'admin_app'
 
 urlpatterns = [
     
-    path('admin_login/', AdminLoginView.as_view(), name='admin_login'),
+    path('/admin_login/', AdminLoginView.as_view(), name='admin_login'),
     path('admin-portal/logout/', admin_logout, name='admin_logout'),
     # ============================================
     # DASHBOARD
