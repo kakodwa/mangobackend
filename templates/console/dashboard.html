@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Management Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: { 50: '#fff7ed', 100: '#ffedd5', 500: '#f97316', 600: '#ea580c', 700: '#c2410c' },
+                            green: { 50: '#f0fdf4', 100: '#dcfce7', 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    </script>
+    <style>
+        /* Custom Leaflet Map Container Rules */
+        .map-container-wrapper {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            margin-top: 5px;
+        }
+        #userTrackingMap {
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body class="h-full bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 transition-colors duration-200">
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-20 transition-colors duration-200">
+            <div class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700 gap-2">
+                <div class="p-2 bg-brand-orange-500 rounded-lg text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-wider uppercase text-gray-900 dark:text-white">Mango<span class="text-brand-green-600 dark:text-brand-green-500">Hub</span></h1>
+                    <span class="text-xs text-gray-400 font-medium">Global Administrator</span>
+                </div>
+            </div>
+
+            <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+                <button onclick="switchTab('overview')" id="btn-overview" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 bg-brand-orange-500 text-white shadow-lg shadow-brand-orange-500/20">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                    Dashboard Overview
+                </button>
+                <button onclick="switchTab('orders')" id="btn-orders" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                    Orders & Fulfillment
+                </button>
+                <button onclick="switchTab('products')" id="btn-products" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Shops & Marketplace
+                </button>
+                <button onclick="switchTab('realestate')" id="btn-realestate" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                    Real Estate Listings
+                </button>
+                <button onclick="switchTab('financials')" id="btn-financials" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Payments & Wallets
+                </button>
+                <button onclick="switchTab('deliveries')" id="btn-deliveries" class="tab-btn w-full flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-150 gap-3 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"></path>
+                    </svg>
+                    Deliveries & Logistics
+                </button>
+            </nav>
+            
+            <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full bg-brand-green-600 flex items-center justify-center font-bold text-white">AD</div>
+                    <div>
+                        <p class="text-xs font-bold text-gray-900 dark:text-white">Admin Core</p>
+                        <p class="text-[10px] text-gray-400">System Administrator</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <div class="flex-1 flex flex-col overflow-hidden">
+            
+            <header class="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8 transition-colors duration-200">
+                <div class="w-64 relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </span>
+                    <input type="text" class="w-full pl-9 pr-4 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-gray-700 border-none text-gray-900 dark:text-white focus:ring-2 focus:ring-brand-orange-500 outline-none" placeholder="Search system nodes...">
+                </div>
+                <div class="flex items-center gap-4">
+                    <button id="theme-toggle" class="p-2 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all">
+                        <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 100 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400">
+                        <span class="w-1.5 h-1.5 rounded-full bg-brand-green-500 animate-pulse"></span> App Engine Active
+                    </span>
+                </div>
+            </header>
+
+            <main class="flex-1 overflow-x-hidden overflow-y-auto p-8">
+                
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-xl text-sm font-semibold border {% if message.tags == 'success' %} bg-brand-green-50 border-brand-green-200 text-brand-green-800 dark:bg-brand-green-900/20 dark:text-brand-green-400 {% else %} bg-brand-orange-50 border-brand-orange-200 text-brand-orange-800 dark:bg-brand-orange-900/20 dark:text-brand-orange-400 {% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <div id="view-overview" class="view-panel space-y-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-5">
+                            <div class="p-4 rounded-xl bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Company Earnings</p>
+                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">MWK {{ company_wallet.total_earnings|default:"0.00"|floatformat:2 }}</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-5">
+                            <div class="p-4 rounded-xl bg-brand-orange-50 dark:bg-brand-orange-900/20 text-brand-orange-500 dark:text-brand-orange-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Marketplace Orders</p>
+                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{{ total_orders }}</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-5">
+                            <div class="p-4 rounded-xl bg-brand-green-50 dark:bg-brand-green-900/20 text-brand-green-600 dark:text-brand-green-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Property Unlocks</p>
+                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{{ total_unlocks }}</h3>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm flex items-center gap-5">
+                            <div class="p-4 rounded-xl bg-brand-orange-50 dark:bg-brand-orange-900/20 text-brand-orange-500 dark:text-brand-orange-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Escrow Held Balance</p>
+                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">MWK {{ escrow_total|floatformat:2 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-2">
+                            <h3 class="text-base font-bold mb-4 text-gray-900 dark:text-white">Transaction Flow Analytics</h3>
+                            <div id="chart-flow"></div>
+                        </div>
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm">
+                            <h3 class="text-base font-bold mb-4 text-gray-900 dark:text-white">Payment Purpose Mix</h3>
+                            <div id="chart-mix"></div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex items-center justify-between border-b-2 border-dashed border-gray-200 dark:border-gray-700 pb-4">
+                            <div>
+                                <h2 class="text-xl font-bold text-brand-green-600 dark:text-brand-green-500">MangoHub <span class="text-brand-orange-500">AppEvent Metrics Panel</span></h2>
+                                <p class="text-xs text-gray-400 mt-1">Live telemetry data analyzing system interaction pipelines, platform engagement vectors, and geospatial user density tracking maps.</p>
+                            </div>
+                            <div class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full bg-brand-green-50 text-brand-green-700 dark:bg-brand-green-900/20 dark:text-brand-green-400 border border-brand-green-100 dark:border-brand-green-900/40">
+                                <i class="fa-solid fa-map-location-dot"></i> Mapping Tracking Active
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                            
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-12">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <i class="fa-solid fa-earth-africa p-2 rounded-lg text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-900/30"></i>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Marketplace User Volumetric Density Hotspots</h3>
+                                </div>
+                                <div class="map-container-wrapper">
+                                    <div id="userTrackingMap"></div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-8 flex flex-col">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <i class="fa-solid fa-chart-line p-2 rounded-lg text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-900/30"></i>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">System Interactions Volumetric Activity (Last 7 Days)</h3>
+                                </div>
+                                <div class="relative w-full flex-grow min-h-[300px]">
+                                    <canvas id="timelineChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-4 flex flex-col">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <i class="fa-solid fa-mobile-screen-button p-2 rounded-lg text-brand-orange-500 bg-brand-orange-50 dark:bg-brand-orange-900/30"></i>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">Platform Source Breakdown</h3>
+                                </div>
+                                <div class="relative w-full flex-grow max-h-[280px]">
+                                    <canvas id="deviceChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-8 flex flex-col">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <i class="fa-solid fa-bolt p-2 rounded-lg text-brand-orange-500 bg-brand-orange-50 dark:bg-brand-orange-900/30"></i>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">High-Frequency Feature Actions Run Rates</h3>
+                                </div>
+                                <div class="relative w-full flex-grow min-h-[300px]">
+                                    <canvas id="eventChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-4 flex flex-col">
+                                <div class="flex items-center gap-3 mb-4">
+                                    <i class="fa-solid fa-location-crosshairs p-2 rounded-lg text-brand-green-600 bg-brand-green-50 dark:bg-brand-green-900/30"></i>
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">User GPS Permission Consent Analysis</h3>
+                                </div>
+                                <div class="relative w-full flex-grow max-h-[280px]">
+                                    <canvas id="gpsChart"></canvas>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-orders" class="view-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Order Tracking Registry</h2>
+                            <p class="text-xs text-gray-400 mt-1">Cross-domain customer orders and seller sub-order mappings</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase text-gray-400 tracking-wider border-b border-gray-200 dark:border-gray-700">
+                                    <tr>
+                                        <th class="p-4 pl-6">Order Number</th>
+                                        <th class="p-4">Customer</th>
+                                        <th class="p-4">Pricing Breakdown</th>
+                                        <th class="p-4">Fulfillment Status</th>
+                                        <th class="p-4">Timeline</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                    {% for order in orders_list %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all">
+                                        <td class="p-4 pl-6 font-semibold text-brand-orange-600 dark:text-brand-orange-400">{{ order.order_number }}</td>
+                                        <td class="p-4">
+                                            <div class="font-medium text-gray-900 dark:text-white">{{ order.customer.get_full_name|default:order.customer.username }}</div>
+                                            <div class="text-xs text-gray-400 font-medium">{{ order.delivery_address|truncatechars:40 }}</div>
+                                        </td>
+                                        <td class="p-4">
+                                            <div class="font-bold text-gray-900 dark:text-white">MWK {{ order.total_amount|floatformat:2 }}</div>
+                                            <div class="text-[11px] text-gray-400">Subtotal: MWK {{ order.subtotal }} | Ship: MWK {{ order.shipping_fee }}</div>
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold 
+                                                {% if order.status == 'delivered' %} bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400 
+                                                {% else %} bg-brand-orange-100 text-brand-orange-800 dark:bg-brand-orange-900/30 dark:text-brand-orange-400 {% endif %}">
+                                                {{ order.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-xs text-gray-400 font-medium">Created: {{ order.created_at|date:"M d, Y" }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="p-6 text-center text-gray-400">No active tracking records inside this cluster node.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-products" class="view-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Marketplace & Vendor Outlets</h2>
+                            <p class="text-xs text-gray-400 mt-1">Manage vendor shops and their corresponding active product inventory catalogs</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Top Approved Vendor Outlets</h3>
+                            <div class="space-y-3 divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for shop in top_vendors %}
+                                <div class="pt-3 flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">{{ shop.name }}</h4>
+                                        <p class="text-xs text-gray-400 font-medium">Owner: {{ shop.owner.username }}</p>
+                                    </div>
+                                    <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400">{{ shop.get_status_display }}</span>
+                                </div>
+                                {% empty %}
+                                <p class="text-xs text-gray-400 italic pt-2">No registered approved outlets available.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm lg:col-span-2">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase text-gray-400 tracking-wider border-b border-gray-200 dark:border-gray-700">
+                                    <tr>
+                                        <th class="p-4 pl-6">Product Details</th>
+                                        <th class="p-4">SKU Code</th>
+                                        <th class="p-4">Pricing Architecture</th>
+                                        <th class="p-4">Stock Level</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                    {% for product in products_list %}
+                                    <tr>
+                                        <td class="p-4 pl-6">
+                                            <div class="font-semibold text-gray-900 dark:text-white">{{ product.name }}</div>
+                                            <div class="text-xs text-brand-orange-500 font-medium">{{ product.category }}</div>
+                                        </td>
+                                        <td class="p-4 font-mono text-xs text-gray-400">{{ product.sku }}</td>
+                                        <td class="p-4">
+                                            <div class="font-bold text-gray-900 dark:text-white">MWK {{ product.price|floatformat:2 }}</div>
+                                            {% if product.original_price %}
+                                            <div class="text-[11px] line-through text-gray-400">MWK {{ product.original_price }}</div>
+                                            {% endif %}
+                                        </td>
+                                        <td class="p-4">
+                                            <span class="px-2 py-0.5 rounded text-xs font-bold {% if product.stock < 5 %} bg-brand-orange-100 text-brand-orange-800 {% else %} bg-brand-green-100 text-brand-green-800 {% endif %}">
+                                                {{ product.stock }} Left
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="4" class="p-6 text-center text-gray-400">No matching items inventory detected.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-realestate" class="view-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Real Estate System Nodes</h2>
+                            <p class="text-xs text-gray-400 mt-1">Monitor property listing parameters and GPS structural definitions</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase text-gray-400 tracking-wider border-b border-gray-200 dark:border-gray-700">
+                                <tr>
+                                    <th class="p-4 pl-6">Property Title / Location</th>
+                                    <th class="p-4">Type / Purpose</th>
+                                    <th class="p-4">Valuation Matrix</th>
+                                    <th class="p-4">Access Rules</th>
+                                    <th class="p-4">Current Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                {% for property in properties_list %}
+                                <tr>
+                                    <td class="p-4 pl-6">
+                                        <div class="font-semibold text-gray-900 dark:text-white">{{ property.title }}</div>
+                                        <div class="text-xs text-gray-400 font-medium">{{ property.address }}, {{ property.city }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <div class="font-medium text-gray-900 dark:text-white">{{ property.get_property_type_display }}</div>
+                                        <div class="text-[11px] text-gray-400">For {{ property.get_listing_purpose_display }}</div>
+                                    </td>
+                                    <td class="p-4 font-bold text-gray-900 dark:text-white">MWK {{ property.price|floatformat:2 }}</td>
+                                    <td class="p-4">
+                                        <div class="text-xs font-semibold text-brand-green-600 dark:text-brand-green-400">Unlock Fee: MWK {{ property.unlock_fee }}</div>
+                                        <div class="text-[11px] text-gray-400">Views: {{ property.view_count }}</div>
+                                    </td>
+                                    <td class="p-4">
+                                        <span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400">
+                                            {{ property.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="p-6 text-center text-gray-400">No properties mapped inside registry.</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="view-financials" class="view-panel hidden space-y-8">
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-gradient-to-br from-brand-green-600 to-brand-green-700 text-white p-6 rounded-2xl shadow-xl shadow-brand-green-600/10 space-y-6">
+                            <div>
+                                <p class="text-xs text-brand-green-100 font-bold uppercase tracking-wider">Main Corporate Vault Balance</p>
+                                <h3 class="text-3xl font-extrabold mt-1">MWK {{ company_wallet.balance|default:"0.00"|floatformat:2 }}</h3>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/20 text-xs">
+                                <div>
+                                    <p class="text-brand-green-100 font-medium">Accumulated Earnings</p>
+                                    <p class="text-base font-bold mt-0.5">MWK {{ company_wallet.total_earnings|default:"0.00"|floatformat:2 }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-brand-green-100 font-medium">Last Node Sync</p>
+                                    <p class="text-base font-bold mt-0.5">Just Now</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-sm lg:col-span-2 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-base font-bold text-gray-900 dark:text-white">Escrow Configuration Parameters</h3>
+                                <p class="text-xs text-gray-400 mt-1">Operational configuration details for the gateway node</p>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-4">
+                                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
+                                    <span class="text-xs text-gray-400 font-medium block">Default Commission</span>
+                                    <span class="text-lg font-bold text-gray-900 dark:text-white">10.00%</span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
+                                    <span class="text-xs text-gray-400 font-medium block">PayChangu Interface</span>
+                                    <span class="text-xs font-bold text-brand-green-600 dark:text-brand-green-400 flex items-center gap-1 mt-1">
+                                        <span class="w-2 h-2 rounded-full bg-brand-green-500 animate-pulse"></span> Live Core
+                                    </span>
+                                </div>
+                                <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-600">
+                                    <span class="text-xs text-gray-400 font-medium block">Reconciliation Queue</span>
+                                    <span class="text-lg font-bold text-brand-orange-500">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <h3 class="text-base font-bold text-gray-900 dark:text-white">Withdrawal & Payout Approval Pipeline</h3>
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+                            <table class="w-full text-left border-collapse">
+                                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase text-gray-400 tracking-wider border-b border-gray-200 dark:border-gray-700">
+                                    <tr>
+                                        <th class="p-4 pl-6">Vendor/User</th>
+                                        <th class="p-4">Payout Method / Destination</th>
+                                        <th class="p-4">Amount Claimed</th>
+                                        <th class="p-4">Pipeline Status</th>
+                                        <th class="p-4 text-right pr-6">Action Execution</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                    {% for withdrawal in withdrawals_list %}
+                                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all">
+                                        <td class="p-4 pl-6">
+                                            <div class="font-semibold text-gray-900 dark:text-white">{{ withdrawal.user.username }}</div>
+                                            <div class="text-xs text-gray-400 font-medium">ID: #{{ withdrawal.pk }}</div>
+                                        </td>
+                                        <td class="p-4">
+                                            <div class="font-medium text-gray-900 dark:text-white">{{ withdrawal.get_payout_method_display }}</div>
+                                            <div class="text-xs font-mono text-gray-400">{{ withdrawal.account_number }}</div>
+                                        </td>
+                                        <td class="p-4 font-bold text-gray-900 dark:text-white">MWK {{ withdrawal.amount|floatformat:2 }}</td>
+                                        <td class="p-4">
+                                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold 
+                                                {% if withdrawal.status == 'pending' %} bg-brand-orange-100 text-brand-orange-800 
+                                                {% elif withdrawal.status == 'approved' or withdrawal.status == 'processed' %} bg-brand-green-100 text-brand-green-800
+                                                {% else %} bg-gray-100 text-gray-800 {% endif %}">
+                                                {{ withdrawal.get_status_display }}
+                                            </span>
+                                        </td>
+                                        <td class="p-4 text-right pr-6">
+                                            {% if withdrawal.status == 'pending' %}
+                                            <div class="flex items-center justify-end gap-2">
+                                                <form action="{% url 'process_withdrawal' withdrawal.pk 'approve' %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="bg-brand-green-600 hover:bg-brand-green-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-all">Approve</button>
+                                                </form>
+                                                <form action="{% url 'process_withdrawal' withdrawal.pk 'reject' %}" method="POST">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs px-3 py-1.5 rounded-lg transition-all">Reject</button>
+                                                </form>
+                                            </div>
+                                            {% else %}
+                                            <span class="text-xs text-gray-400 italic font-medium">Settled</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="5" class="p-6 text-center text-gray-400">No payouts claims detected in pipeline.</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="view-deliveries" class="view-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-gray-900 dark:text-white">Logistics & Delivery Control Node</h2>
+                            <p class="text-xs text-gray-400 mt-1">Track active multi-vendor delivery fulfillments, tracking codes, and assigned personnel status.</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4">
+                            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider">Top Fleet Personnel</h3>
+                            <div class="space-y-3 divide-y divide-gray-100 dark:divide-gray-700">
+                                {% for person in delivery_people %}
+                                <div class="pt-3 flex items-center justify-between">
+                                    <div>
+                                        <h4 class="font-bold text-gray-900 dark:text-white">{{ person.full_name }}</h4>
+                                        <p class="text-xs text-gray-400 font-medium">Vehicle: {{ person.vehicle_type|default:"N/A" }} ({{ person.vehicle_number|default:"-" }})</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold 
+                                            {% if person.status == 'active' %} bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400
+                                            {% elif person.status == 'busy' %} bg-brand-orange-100 text-brand-orange-800 dark:bg-brand-orange-900/30 dark:text-brand-orange-400
+                                            {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                                            {{ person.get_status_display }}
+                                        </span>
+                                        <p class="text-xs text-amber-500 font-bold mt-1">★ {{ person.rating }}</p>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <p class="text-xs text-gray-400 italic pt-2">No system delivery fleet registered.</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm lg:col-span-2">
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs font-bold uppercase text-gray-400 tracking-wider border-b border-gray-200 dark:border-gray-700">
+                                        <tr>
+                                            <th class="p-4 pl-6">Order / Tracking</th>
+                                            <th class="p-4">Assigned Courier</th>
+                                            <th class="p-4">Destination Profile</th>
+                                            <th class="p-4">Logistics Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                                        {% for delivery in deliveries_list %}
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-all">
+                                            <td class="p-4 pl-6">
+                                                <div class="font-semibold text-brand-orange-600 dark:text-brand-orange-400">Order #{{ delivery.order.order_number }}</div>
+                                                <div class="text-[11px] text-gray-400 mt-0.5 font-mono">Code: {{ delivery.delivery_code|default:"Unassigned" }}</div>
+                                            </td>
+                                            <td class="p-4">
+                                                {% if delivery.delivery_person %}
+                                                <div class="font-medium text-gray-900 dark:text-white">{{ delivery.delivery_person.full_name }}</div>
+                                                <div class="text-xs text-gray-400">{{ delivery.delivery_person.phone_number }}</div>
+                                                {% else %}
+                                                <span class="text-xs text-gray-400 italic font-medium">No Courier Selected</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="p-4">
+                                                <div class="font-medium text-gray-900 dark:text-white truncate max-w-[180px]">{{ delivery.delivery_address|default:"No Address Available" }}</div>
+                                                <div class="text-xs text-gray-400">Phone: {{ delivery.delivery_phone_number|default:"-" }}</div>
+                                            </td>
+                                            <td class="p-4">
+                                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold 
+                                                    {% if delivery.status == 'delivered' %} bg-brand-green-100 text-brand-green-800 dark:bg-brand-green-900/30 dark:text-brand-green-400
+                                                    {% elif delivery.status == 'failed' %} bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400
+                                                    {% else %} bg-brand-orange-100 text-brand-orange-800 dark:bg-brand-orange-900/30 dark:text-brand-orange-400 {% endif %}">
+                                                    {{ delivery.get_status_display }}
+                                                </span>
+                                                {% if delivery.escrow_released %}
+                                                <div class="text-[10px] text-brand-green-600 dark:text-brand-green-400 font-bold mt-1 flex items-center gap-0.5">
+                                                    ✓ Escrow Released
+                                                </div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="4" class="p-6 text-center text-gray-400">No active delivery or shipment streams found.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Core Tab-Switching Mechanism
+        function switchTab(viewId) {
+            document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+            document.getElementById('view-' + viewId).classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-brand-orange-500', 'text-white', 'shadow-lg', 'shadow-brand-orange-500/20');
+                btn.classList.add('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50');
+            });
+
+            const activeBtn = document.getElementById('btn-' + viewId);
+            if(activeBtn) {
+                activeBtn.classList.remove('text-gray-600', 'dark:text-gray-300', 'hover:bg-gray-100', 'dark:hover:bg-gray-700/50');
+                activeBtn.classList.add('bg-brand-orange-500', 'text-white', 'shadow-lg', 'shadow-brand-orange-500/20');
+            }
+        }
+
+        // Global Dark Mode Theme Toggle Setup
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        if (document.documentElement.classList.contains('dark')) {
+            themeToggleLightIcon.classList.remove('hidden');
+        } else {
+            themeToggleDarkIcon.classList.remove('hidden');
+        }
+
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', function() {
+            themeToggleDarkIcon.classList.toggle('hidden');
+            themeToggleLightIcon.classList.toggle('hidden');
+
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('color-theme', 'light');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('color-theme', 'dark');
+            }
+        });
+
+        // Combined Telemetry, Map Initialization, and Render Loop
+        document.addEventListener("DOMContentLoaded", function() {
+            
+            // --- A. Ingest Context JSON Variables or Load Fallback Analytics Objects ---
+            let serverData;
+            try {
+                serverData = {{ chart_data_json|safe }};
+            } catch(e) {
+                console.warn("Django context 'chart_data_json' token not detected. Generating sandbox mock fallbacks.");
+                serverData = {
+                    devices: [{device_type:'Android App', total:50}, {device_type:'iOS App', total:30}, {device_type:'Web Engine', total:15}],
+                    events: [{event_name:'Shop Search', total:140}, {event_name:'Product Views', total:290}, {event_name:'Checkout Initiations', total:95}],
+                    timeline: [{day:'Jun 08', total:45}, {day:'Jun 09', total:62}, {day:'Jun 10', total:51}, {day:'Jun 11', total:84}, {day:'Jun 12', total:76}, {day:'Jun 13', total:93}, {day:'Jun 14', total:110}],
+                    gps: {allowed: 82, denied: 18},
+                    locations: [[-13.96, 33.77], [-13.98, 33.75], [-15.42, 35.10], [-15.78, 35.01], [-12.92, 34.28]] // Malawi hotpins
+                };
+            }
+
+            // --- B. Leaflet Geospatial Tracking Setup ---
+            const map = L.map('userTrackingMap').setView([-13.96, 33.77], 6.5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            if (serverData.locations && serverData.locations.length > 0) {
+                const heatIntensityMatrix = serverData.locations.map(coord => [parseFloat(coord[0]), parseFloat(coord[1]), 0.8]);
+                L.heatLayer(heatIntensityMatrix, {
+                    radius: 25, blur: 15, maxZoom: 10,
+                    gradient: { 0.4: '#2e7d32', 0.65: '#f97316', 1.0: '#e74c3c' }
+                }).addTo(map);
+            }
+            setTimeout(() => { map.invalidateSize(); }, 200);
+
+            // --- C. Standard Chart.js Data Visualizations Configs ---
+            const mangoOrange = '#f97316'; 
+            const leafGreen = '#16a34a'; 
+            const secondaryTeal = '#06b6d4'; 
+            const lightMutedGray = '#94a3b8';
+
+            // 1. Timeline Chart
+            const timelineChart = new Chart(document.getElementById('timelineChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: serverData.timeline.map(x => x.day),
+                    datasets: [{
+                        label: 'Total Events', data: serverData.timeline.map(x => x.total),
+                        borderColor: leafGreen, backgroundColor: 'rgba(22,163,74,0.05)', fill: true,
+                        tension: 0.35, borderWidth: 3, pointBackgroundColor: mangoOrange, pointBorderColor: '#FFFFFF', pointRadius: 5
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 2. Device Source Breakdown
+            const deviceChart = new Chart(document.getElementById('deviceChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: serverData.devices.map(x => x.device_type),
+                    datasets: [{
+                        data: serverData.devices.map(x => x.total),
+                        backgroundColor: [leafGreen, mangoOrange, secondaryTeal], borderWidth: 2, hoverOffset: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } }, cutout: '72%' }
+            });
+
+            // 3. High Frequency Action Bar Chart
+            const eventChart = new Chart(document.getElementById('eventChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: serverData.events.map(x => x.event_name),
+                    datasets: [{
+                        label: 'Operations', data: serverData.events.map(x => x.total),
+                        backgroundColor: mangoOrange, borderRadius: 6, barThickness: 16
+                    }]
+                },
+                options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            // 4. GPS Consent Pie Matrix
+            const gpsChart = new Chart(document.getElementById('gpsChart').getContext('2d'), {
+                type: 'pie',
+                data: {
+                    labels: ['Shared Location', 'Denied'],
+                    datasets: [{ data: [serverData.gps.allowed, serverData.gps.denied], backgroundColor: [leafGreen, lightMutedGray], borderWidth: 1 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12 } } } }
+            });
+
+            // --- D. Core ApexCharts Setup (Transaction Flow & Mix) ---
+            var flowOptions = {
+                chart: { type: 'line', height: 300, toolbar: { show: false }, background: 'transparent' },
+                series: [
+                    { name: 'Total Revenue Volume', data: {{ chart_revenue_volume|default:"[32, 40, 45, 60, 49, 72, 85]" }} },
+                    { name: 'Escrow Holdings', data: {{ chart_escrow_data|default:"[12, 18, 23, 20, 31, 27, 42]" }} }
+                ],
+                colors: [leafGreen, mangoOrange],
+                stroke: { curve: 'smooth', width: 3 },
+                xaxis: { categories: {{ chart_days|safe|default:"['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']" }} },
+                theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' }
+            };
+            var flowChart = new ApexCharts(document.querySelector("#chart-flow"), flowOptions);
+            flowChart.render();
+
+            var mixOptions = {
+                chart: { type: 'donut', height: 320, background: 'transparent' },
+                series: [55, 25, 15, 5],
+                labels: ['Order Payments', 'Property Unlocks', 'Lodge Bookings', 'Ticket Purchases'],
+                colors: [mangoOrange, leafGreen, '#22c55e', '#ea580c'],
+                theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' },
+                legend: { position: 'bottom' }
+            };
+            var mixChart = new ApexCharts(document.querySelector("#chart-mix"), mixOptions);
+            mixChart.render();
+            
+            // Dynamic theme update dispatcher
+            themeToggleBtn.addEventListener('click', function() {
+                const updatedTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+                flowChart.updateOptions({ theme: { mode: updatedTheme } });
+                mixChart.updateOptions({ theme: { mode: updatedTheme } });
+            });
+        });
+    </script>
+</body>
+</html>

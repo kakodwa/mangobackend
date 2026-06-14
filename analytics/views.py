@@ -17,60 +17,76 @@ import datetime
 import json
 
 
-def analytics_dashboard_page(request):
+import datetime
+from django.db.models import Count
+from django.db.models.functions import TruncDay
+from django.utils import timezone
+
+from .models import AppEvent
+
+
+def get_dashboard_analytics(days=7, top_events=7):
     """
-    Renders the HTML analytics dashboard interface template view 
-    pre-loaded with aggregated AppEvent metrics and GPS tracking data coordinates.
+    Returns aggregated analytics data for dashboards, APIs,
+    reports, and other consumers.
     """
-    # 1. Platform / Device Type Distribution
-    device_metrics = list(AppEvent.objects.values('device_type')
-                          .annotate(total=Count('id'))
-                          .order_by('-total'))
-    
-    # 2. Top Engagement Features
-    event_metrics = list(AppEvent.objects.values('event_name')
-                         .annotate(total=Count('id'))
-                         .order_by('-total')[:7])
-    
-    # 3. Timeline Sequence Trends (Last 7 Days)
-    one_week_ago = timezone.now() - datetime.timedelta(days=7)
-    timeline_metrics = list(AppEvent.objects.filter(timestamp__gte=one_week_ago)
-                            .annotate(day=TruncDay('timestamp'))
-                            .values('day')
-                            .annotate(total=Count('id'))
-                            .order_by('day'))
-    
+
+    # Device distribution
+    device_metrics = list(
+        AppEvent.objects.values("device_type")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    # Top events
+    event_metrics = list(
+        AppEvent.objects.values("event_name")
+        .annotate(total=Count("id"))
+        .order_by("-total")[:top_events]
+    )
+
+    # Timeline
+    start_date = timezone.now() - datetime.timedelta(days=days)
+
+    timeline_metrics = list(
+        AppEvent.objects.filter(timestamp__gte=start_date)
+        .annotate(day=TruncDay("timestamp"))
+        .values("day")
+        .annotate(total=Count("id"))
+        .order_by("day")
+    )
+
     for item in timeline_metrics:
-        item['day'] = item['day'].strftime('%b %d')
+        item["day"] = item["day"].strftime("%b %d")
 
-    # 4. GPS Permission Splits
-    gps_allowed = AppEvent.objects.filter(latitude__isnull=False, longitude__isnull=False).count()
-    gps_denied = AppEvent.objects.filter(latitude__isnull=True).count()
-
-    # 5. NEW: GPS Coordinate Hot Spot Extraction
-    # Pulls all events containing valid location telemetry fields
-    gps_points = list(AppEvent.objects.filter(
-        latitude__isnull=False, 
+    # GPS metrics
+    gps_allowed = AppEvent.objects.filter(
+        latitude__isnull=False,
         longitude__isnull=False
-    ).values_list('latitude', 'longitude'))
+    ).count()
 
-    # Consolidate all data pipelines
-    chart_data = {
-        'devices': device_metrics,
-        'events': event_metrics,
-        'timeline': timeline_metrics,
-        'gps': {
-            'allowed': gps_allowed,
-            'denied': gps_denied
+    gps_denied = AppEvent.objects.filter(
+        latitude__isnull=True
+    ).count()
+
+    # GPS coordinates
+    gps_points = list(
+        AppEvent.objects.filter(
+            latitude__isnull=False,
+            longitude__isnull=False
+        ).values_list("latitude", "longitude")
+    )
+
+    return {
+        "devices": device_metrics,
+        "events": event_metrics,
+        "timeline": timeline_metrics,
+        "gps": {
+            "allowed": gps_allowed,
+            "denied": gps_denied,
         },
-        'locations': gps_points # Nested structure format: [[lat1, lng1], [lat2, lng2], ...]
+        "locations": gps_points,
     }
-
-    context = {
-        'chart_data_json': json.dumps(chart_data)
-    }
-
-    return render(request, 'analytics/analytics_dashboard.html', context)
 
 
 class LogEventView(APIView):
