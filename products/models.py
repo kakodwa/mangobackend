@@ -1,20 +1,21 @@
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.contenttypes.fields import GenericRelation
+from .utils import process_and_compress_image  # 👈 Imported utility function
 import uuid
 from users.models import User
 from shops.models import Shop
 from mangohub.models import Review
 
-class Product(models.Model):
 
+class Product(models.Model):
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=255)
     slug = models.SlugField()
     description = models.TextField()
     image = models.ImageField(upload_to='product_images/')
 
-    category = models.CharField(max_length=50,default='Fashion')
+    category = models.CharField(max_length=50, default='Fashion')
     
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -33,11 +34,9 @@ class Product(models.Model):
     reviews = GenericRelation(Review)
     total_reviews = models.IntegerField(default=0)
 
-    
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
 
     class Meta:
         ordering = ['-created_at']
@@ -46,9 +45,8 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} - {self.shop.name}"
 
-    
-
     def save(self, *args, **kwargs):
+        # 1. Slug Handling
         if not self.slug:
             base_slug = slugify(self.name)
             slug = base_slug
@@ -59,8 +57,16 @@ class Product(models.Model):
                 counter += 1
             self.slug = slug
 
+        # 2. SKU Handling
         if not self.sku:
             self.sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
+
+        # 3. Image Optimization (Square: 1000x1000)
+        if self.image and not getattr(self, '_image_processed', False):
+            processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=1000)
+            if processed_file:
+                self.image = processed_file
+                self._image_processed = True
 
         super().save(*args, **kwargs)
 
@@ -74,6 +80,16 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.product.name}"
+
+    def save(self, *args, **kwargs):
+        # Image Optimization (Square: 800x800 for extra gallery items)
+        if self.image and not getattr(self, '_image_processed', False):
+            processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=800)
+            if processed_file:
+                self.image = processed_file
+                self._image_processed = True
+
+        super().save(*args, **kwargs)
 
 
 class ProductReview(models.Model):
@@ -99,25 +115,34 @@ class Favorite(models.Model):
         unique_together = ('user', 'product')
 
 
-# models.py
 class Banner(models.Model):
-    title = models.CharField(max_length=255,blank=True, null=True)
+    title = models.CharField(max_length=255, blank=True, null=True)
     subtitle = models.CharField(max_length=255, blank=True)
     image = models.ImageField(upload_to='banners/')
-    url = models.URLField(blank=True, null=True)  # 👈 NEW FIELD
+    url = models.URLField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
-    cta_text = models.CharField(max_length=50,default="Learn more")
+    cta_text = models.CharField(max_length=50, default="Learn more")
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return "banner"
+        return self.title if self.title else "banner"
+
+    def save(self, *args, **kwargs):
+        # Image Optimization (Landscape 16:9: 1400x787 for high quality display)
+        if self.image and not getattr(self, '_image_processed', False):
+            processed_file = process_and_compress_image(self.image, ratio_type="landscape", target_width=1400)
+            if processed_file:
+                self.image = processed_file
+                self._image_processed = True
+
+        super().save(*args, **kwargs)
 
 
 class AppVersion(models.Model):
     version = models.CharField(max_length=20)
     force_update = models.BooleanField(default=False)
-    maintenance_mode = models.BooleanField(default=False)  # NEW
-    message = models.TextField(blank=True, null=True)       # NEW
+    maintenance_mode = models.BooleanField(default=False)
+    message = models.TextField(blank=True, null=True)
     update_url = models.URLField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
 
