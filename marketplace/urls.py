@@ -69,7 +69,7 @@ urlpatterns = [
     # =================================================================
     # This remains at the bottom so it handles automated ViewSet actions (like initiate_payment)
     path('api/', include(router.urls)),
-    re_path(r'^.*$', views.serve_flutter_web_app, name='flutter_web_catchall'),
+    path('', views.serve_flutter_web_app, name='flutter_web_catchall'),
 ]
 
 if settings.DEBUG:

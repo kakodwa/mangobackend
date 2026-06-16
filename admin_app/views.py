@@ -131,7 +131,7 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
         
         if withdrawal.status != 'pending':
             messages.error(request, "This claim context has already been settled and closed.")
-            return redirect('admin_dashboard')
+            return redirect('admin_app:admin_dashboard')
 
         if action_type == 'approve':
             withdrawal.status = 'approved'
@@ -142,7 +142,7 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
             messages.warning(request, "Payout request has been successfully rejected.")
             
         withdrawal.save()
-        return redirect('admin_dashboard')
+        return redirect('admin_app:admin_dashboard')
 
 
 #______________________________________________________________________
@@ -177,7 +177,7 @@ class AdminLoginView(View):
                     request.session.set_expiry(1209600) # Session persists for 2 weeks
                 
                 messages.success(request, f"Welcome back, {user.username}!")
-                return redirect('admin_dashboard') # Name of your dashboard URL route
+                return redirect('admin_app:admin_dashboard') # Name of your dashboard URL route
             else:
                 # Regular user trying to breach the admin panel portal
                 messages.error(request, "Access Denied: Insufficient security clearance privileges.")
@@ -190,4 +190,4 @@ class AdminLoginView(View):
 def admin_logout(request):
     logout(request)
     messages.info(request, "Logged out securely.")
-    return redirect('admin_login')
+    return redirect('admin_app:admin_login')
