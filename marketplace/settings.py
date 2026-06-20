@@ -15,6 +15,8 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-zf3igyn14(!s4)$aofr7y
 
 DEBUG = config('DEBUG', default=False, cast=bool)
 
+CJ_APP_KEY = config('CJ_APP_KEY')
+
 ALLOWED_HOSTS = config(
     'ALLOWED_HOSTS',
     default='127.0.0.1,localhost',

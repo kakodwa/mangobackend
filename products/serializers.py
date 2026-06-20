@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from mangohub.serializers import ReviewSerializer
-from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite
+from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite,ProductVariant
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -17,6 +17,15 @@ class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['id', 'image', 'alt_text', 'cta_text', 'is_primary']
+
+
+
+class ProductVariantSerializer(
+        serializers.ModelSerializer):
+
+    class Meta:
+        model = ProductVariant
+        fields = '__all__'
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -56,10 +65,13 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
+    # Accept variants in the write payload
+    variants = ProductVariantSerializer(many=True, required=False)
+
     class Meta:
         model = Product
         fields = [
-            'id',  # ✅ include id (read-only safety)
+            'id',
             'name',
             'description',
             'image',
@@ -69,6 +81,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'discount_percentage',
             'stock',
             'is_active',
+            'variants', # 👈 Added
         ]
         read_only_fields = ['id']
 
@@ -80,7 +93,18 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("User has no shop assigned")
 
         validated_data['shop'] = shop
-        return super().create(validated_data)
+        
+        # Pop the variant data out before creating the Product instance
+        variants_data = validated_data.pop('variants', [])
+        
+        # 1. Create the parent product
+        product = super().create(validated_data)
+        
+        # 2. Create the linked variants
+        for variant_data in variants_data:
+            ProductVariant.objects.create(product=product, **variant_data)
+            
+        return product
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
@@ -120,3 +144,4 @@ class BannerSerializer(serializers.ModelSerializer):
             )
 
         return None
+

@@ -56,7 +56,8 @@ class ShopFeedService(BaseFeedService):
         feed = [
             self.format_item(
                 "shop",
-                shop,
+                serialized_shops,
+                #shop,
             )
             for shop in serialized_shops
         ]

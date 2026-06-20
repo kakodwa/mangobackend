@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.contenttypes.fields import GenericRelation
-from .utils import process_and_compress_image  # 👈 Imported utility function
+from .utils import process_and_compress_image  
 import uuid
 from users.models import User
 from shops.models import Shop
@@ -62,11 +62,15 @@ class Product(models.Model):
             self.sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
 
         # 3. Image Optimization (Square: 1000x1000)
-        if self.image and not getattr(self, '_image_processed', False):
-            processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=1000)
-            if processed_file:
-                self.image = processed_file
-                self._image_processed = True
+        # CRITICAL FIX: Only compress if it's a freshly uploaded file payload object instance
+        if self.image and hasattr(self.image, 'file') and not getattr(self, '_image_processed', False):
+            try:
+                processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=1000)
+                if processed_file:
+                    self.image = processed_file
+                    self._image_processed = True
+            except Exception as e:
+                print(f"Skipping compression or missing physical local file: {e}")
 
         super().save(*args, **kwargs)
 
@@ -82,12 +86,15 @@ class ProductImage(models.Model):
         return f"Image for {self.product.name}"
 
     def save(self, *args, **kwargs):
-        # Image Optimization (Square: 800x800 for extra gallery items)
-        if self.image and not getattr(self, '_image_processed', False):
-            processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=800)
-            if processed_file:
-                self.image = processed_file
-                self._image_processed = True
+        # CRITICAL FIX: Only compress if it's a freshly uploaded file payload object instance
+        if self.image and hasattr(self.image, 'file') and not getattr(self, '_image_processed', False):
+            try:
+                processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=800)
+                if processed_file:
+                    self.image = processed_file
+                    self._image_processed = True
+            except Exception as e:
+                print(f"Skipping compression: {e}")
 
         super().save(*args, **kwargs)
 
@@ -128,12 +135,15 @@ class Banner(models.Model):
         return self.title if self.title else "banner"
 
     def save(self, *args, **kwargs):
-        # Image Optimization (Landscape 16:9: 1400x787 for high quality display)
-        if self.image and not getattr(self, '_image_processed', False):
-            processed_file = process_and_compress_image(self.image, ratio_type="landscape", target_width=1400)
-            if processed_file:
-                self.image = processed_file
-                self._image_processed = True
+        # CRITICAL FIX: Only compress if it's a freshly uploaded file payload object instance
+        if self.image and hasattr(self.image, 'file') and not getattr(self, '_image_processed', False):
+            try:
+                processed_file = process_and_compress_image(self.image, ratio_type="landscape", target_width=1400)
+                if processed_file:
+                    self.image = processed_file
+                    self._image_processed = True
+            except Exception as e:
+                print(f"Skipping compression: {e}")
 
         super().save(*args, **kwargs)
 
@@ -148,3 +158,16 @@ class AppVersion(models.Model):
 
     def __str__(self):
         return self.version
+
+
+class ProductVariant(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
+    cj_variant_id = models.CharField(max_length=100, unique=True, db_index=True, blank=True, null=True)
+    sku = models.CharField(max_length=100, blank=True, null=True)
+    attributes = models.JSONField(default=dict, blank=True)
+    wholesale_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    weight_g = models.IntegerField(default=0)
+    stock = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.product.name} - {self.attributes}"

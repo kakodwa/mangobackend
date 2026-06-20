@@ -52,7 +52,7 @@ class HomeFeedService(BaseFeedService):
 
         product_groups = chunk_list(
             serialized_products,
-            2,
+            12,
         )
 
         feed = [

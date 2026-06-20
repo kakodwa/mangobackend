@@ -56,7 +56,8 @@ class PropertyFeedService(BaseFeedService):
         feed = [
             self.format_item(
                 "property",
-                property_item,
+                 serialized_properties 
+                #property_item,
             )
             for property_item in serialized_properties
         ]

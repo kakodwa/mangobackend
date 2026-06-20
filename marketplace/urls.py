@@ -17,6 +17,8 @@ from wallet.views import WalletViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 from mangohub import views
+from products.cj_views import ProductListView,ProductDetailView
+
 
 # API Router
 router = DefaultRouter()
@@ -57,6 +59,10 @@ urlpatterns = [
     # 🔌 2. STANDARD FEATURE API ENDPOINTS
     # =================================================================
     path('api/analytics/', include('analytics.urls')),
+
+    path("api/cj/products/",ProductListView.as_view()),
+    path("api/cj/products/<str:pid>/",ProductDetailView.as_view()),
+    
     path('api/tickets/check-in/', TicketCheckInAPIView.as_view(), name='ticket-checkin'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
