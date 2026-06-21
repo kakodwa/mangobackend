@@ -4,12 +4,12 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite
-from .serializers import ProductSerializer,FavoriteSerializer,BannerSerializer,ProductImageSerializer, ProductCreateUpdateSerializer, ProductReviewSerializer
+from .models import Product, ProductImage, ProductReview, Banner, AppVersion, Favorite
+from .serializers import ProductSerializer, FavoriteSerializer, BannerSerializer, ProductImageSerializer, ProductCreateUpdateSerializer, ProductReviewSerializer
 from rest_framework.filters import BaseFilterBackend
 from .filters import DistrictFilterBackend
 from django.db.models import Q
-
+import json  # 👈 Added to safely parse the incoming text JSON string values
 
 
 class BannerViewSet(ReadOnlyModelViewSet):
@@ -21,11 +21,10 @@ class ProductViewSet(viewsets.ModelViewSet):
     queryset = Product.objects.filter(is_active=True).select_related('shop')
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    filter_backends = [DjangoFilterBackend,filters.SearchFilter,filters.OrderingFilter,DistrictFilterBackend,]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter, DistrictFilterBackend]
     filterset_fields = ['shop', 'shop__category', 'shop__district']
     search_fields = ['name', 'description', 'sku']
     ordering_fields = ['price', 'rating', 'created_at']
-
 
     def get_serializer_class(self):
         if self.action in ['create', 'update', 'partial_update']:
@@ -33,22 +32,54 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductSerializer
 
     def create(self, request, *args, **kwargs):
-      
-        serializer = self.get_serializer(data=request.data)
+        # 1. Create a mutable copy of the multipart request data payload
+        data = request.data.copy()
+
+        # 2. Intercept variants text block string from multipart and decode it back to native Python objects
+        if 'variants' in data and isinstance(data['variants'], str):
+            try:
+                data['variants'] = json.loads(data['variants'])
+            except json.JSONDecodeError:
+                return Response(
+                    {"variants": ["Invalid JSON format string received for variations entry."]},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        # 3. Pass massaged payload structure data down to the write serializer
+        serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
             print("VALIDATION ERRORS:", serializer.errors)
-            return Response(serializer.errors, status=400)
-
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         product = serializer.save(is_active=True)
 
-      
+        # Render outbound response layout using your presentation structure schema
         output_serializer = ProductSerializer(
             product,
             context={'request': request}
         )
-
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        # Handle update workflows similarly to intercept raw variations payload fields
+        data = request.data.copy()
+
+        if 'variants' in data and isinstance(data['variants'], str):
+            try:
+                data['variants'] = json.loads(data['variants'])
+            except json.JSONDecodeError:
+                return Response({"variants": ["Invalid JSON format structure configuration."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        if not serializer.is_valid():
+            print("UPDATE VALIDATION ERRORS:", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        product = serializer.save()
+        output_serializer = ProductSerializer(product, context={'request': request})
+        return Response(output_serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'])
     def reviews(self, request, pk=None):
@@ -63,11 +94,10 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         related = Product.objects.filter(
             is_active=True
-            ).filter(
+        ).filter(
             Q(category=product.category) |
             Q(shop=product.shop)
-            ).exclude(id=product.id).order_by('-rating')[:12]
-
+        ).exclude(id=product.id).order_by('-rating')[:12]
 
         serializer = ProductSerializer(
             related,
@@ -110,7 +140,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = ProductSerializer(products, many=True)
         return Response(serializer.data)
 
-    @action(detail=True,methods=['post'],parser_classes=[MultiPartParser, FormParser])
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
     def add_images(self, request, pk=None):
         product = self.get_object()
 
@@ -133,8 +163,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             saved.append(obj.id)
             print("✅ SAVED IMAGE ID:", obj.id)
 
-        return Response({"status": "success","saved_images": saved})
-
+        return Response({"status": "success", "saved_images": saved})
 
     @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny])
     def app_version(self, request):
@@ -147,7 +176,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 "maintenance_mode": False,
                 "message": None,
                 "update_url": None
-                })
+            })
 
         return Response({
             "latest_version": version.version,
@@ -155,6 +184,4 @@ class ProductViewSet(viewsets.ModelViewSet):
             "maintenance_mode": version.maintenance_mode,
             "message": version.message,
             "update_url": version.update_url
-            })
-
- 
+        })

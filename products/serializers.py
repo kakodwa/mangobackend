@@ -20,12 +20,11 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
 
 
-class ProductVariantSerializer(
-        serializers.ModelSerializer):
-
+class ProductVariantSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
-        fields = '__all__'
+        fields = ['id', 'cj_variant_id', 'sku', 'attributes', 'wholesale_price', 'weight_g', 'stock']
+        # Do NOT put fields like 'attributes' or 'stock' inside read_only_fields here
 
 
 class ProductSerializer(serializers.ModelSerializer):
