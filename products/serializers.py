@@ -30,6 +30,8 @@ class ProductVariantSerializer(
 
 class ProductSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
+    # 1. Nest the ProductVariantSerializer inside the read serializer
+    variants = ProductVariantSerializer(many=True, read_only=True) 
     shop_name = serializers.CharField(source='shop.name', read_only=True)
     owner_id = serializers.IntegerField(source='shop.owner.id', read_only=True)
     shop_district = serializers.CharField(source='shop.district',read_only=True,)
@@ -39,7 +41,6 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
-
     class Meta:
         model = Product
         fields = [
@@ -48,9 +49,11 @@ class ProductSerializer(serializers.ModelSerializer):
             'price', 'original_price', 'discount_percentage',
             'stock', 'sku', 'is_active','shop_phone_number',
             'rating', 'total_reviews',
-            'images', 'created_at','owner_id','reviews'
+            'images', 'created_at','owner_id','reviews',
+            'variants'
         ]
         read_only_fields = ['id', 'shop', 'created_at']
+    
 
     def get_images(self, obj):
         request = self.context.get('request')
