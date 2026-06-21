@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from django.contrib.contenttypes.fields import GenericRelation
+from django.core.files.storage import default_storage
 from .utils import process_and_compress_image  
 import uuid
 from users.models import User
@@ -62,15 +63,24 @@ class Product(models.Model):
             self.sku = f"SKU-{uuid.uuid4().hex[:8].upper()}"
 
         # 3. Image Optimization (Square: 1000x1000)
-        # CRITICAL FIX: Only compress if it's a freshly uploaded file payload object instance
-        if self.image and hasattr(self.image, 'file') and not getattr(self, '_image_processed', False):
+        if self.image and not getattr(self, '_image_processed', False):
             try:
-                processed_file = process_and_compress_image(self.image, ratio_type="square", target_width=1000)
-                if processed_file:
-                    self.image = processed_file
-                    self._image_processed = True
+                if default_storage.exists(self.image.name):
+                    processed_file = process_and_compress_image(
+                        self.image,
+                        ratio_type="square",
+                        target_width=1000
+                        )
+
+                    if processed_file:
+                        self.image = processed_file
+                        self._image_processed = True
+
+            except FileNotFoundError:
+                print(f"Missing image file: {self.image.name}")
+
             except Exception as e:
-                print(f"Skipping compression or missing physical local file: {e}")
+                print(f"Skipping compression: {e}")
 
         super().save(*args, **kwargs)
 

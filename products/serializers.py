@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from mangohub.serializers import ReviewSerializer
-from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite,ProductVariant
+from .models import Product, ProductImage, ProductReview, Banner, AppVersion, Favorite, ProductVariant
 
 
 class FavoriteSerializer(serializers.ModelSerializer):
@@ -8,10 +8,12 @@ class FavoriteSerializer(serializers.ModelSerializer):
         model = Favorite
         fields = '__all__'
 
+
 class AppVersionSerializer(serializers.ModelSerializer):
     class Meta:
         model = AppVersion
         fields = '__all__'
+
 
 class ProductImageSerializer(serializers.ModelSerializer):
     class Meta:
@@ -19,44 +21,39 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'alt_text', 'cta_text', 'is_primary']
 
 
-
 class ProductVariantSerializer(serializers.ModelSerializer):
+    # Keep id explicit so it can be passed and read during nested create/update payloads
+    id = serializers.IntegerField(required=False)
+
     class Meta:
         model = ProductVariant
         fields = ['id', 'cj_variant_id', 'sku', 'attributes', 'wholesale_price', 'weight_g', 'stock']
-        # Do NOT put fields like 'attributes' or 'stock' inside read_only_fields here
 
 
 class ProductSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
-    # 1. Nest the ProductVariantSerializer inside the read serializer
     variants = ProductVariantSerializer(many=True, read_only=True) 
     shop_name = serializers.CharField(source='shop.name', read_only=True)
     owner_id = serializers.IntegerField(source='shop.owner.id', read_only=True)
-    shop_district = serializers.CharField(source='shop.district',read_only=True,)
+    shop_district = serializers.CharField(source='shop.district', read_only=True)
     reviews = ReviewSerializer(many=True)
-    shop_phone_number = serializers.CharField(
-        source='shop.phone_number',
-        read_only=True
-    )
+    shop_phone_number = serializers.CharField(source='shop.phone_number', read_only=True)
 
     class Meta:
         model = Product
         fields = [
             'id', 'shop', 'shop_name', 'name', 'slug',
-            'description', 'image', 'category','shop_district',
+            'description', 'image', 'category', 'shop_district',
             'price', 'original_price', 'discount_percentage',
-            'stock', 'sku', 'is_active','shop_phone_number',
+            'stock', 'sku', 'is_active', 'shop_phone_number',
             'rating', 'total_reviews',
-            'images', 'created_at','owner_id','reviews',
+            'images', 'created_at', 'owner_id', 'reviews',
             'variants'
         ]
         read_only_fields = ['id', 'shop', 'created_at']
     
-
     def get_images(self, obj):
         request = self.context.get('request')
-
         images = []
         for img in obj.images.all():
             if request:
@@ -67,7 +64,6 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
-    # Accept variants in the write payload
     variants = ProductVariantSerializer(many=True, required=False)
 
     class Meta:
@@ -83,7 +79,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'discount_percentage',
             'stock',
             'is_active',
-            'variants', # 👈 Added
+            'variants',
         ]
         read_only_fields = ['id']
 
@@ -95,18 +91,44 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("User has no shop assigned")
 
         validated_data['shop'] = shop
-        
-        # Pop the variant data out before creating the Product instance
         variants_data = validated_data.pop('variants', [])
         
-        # 1. Create the parent product
         product = super().create(validated_data)
         
-        # 2. Create the linked variants
         for variant_data in variants_data:
+            # Drop any frontend-passed dummy 'id' before creating
+            variant_data.pop('id', None)
             ProductVariant.objects.create(product=product, **variant_data)
             
         return product
+
+    def update(self, instance, validated_data):
+        # 1. Intercept the writable nested variations data array
+        variants_data = validated_data.pop('variants', None)
+
+        # 2. Safely perform standard product field column mutations
+        instance = super().update(instance, validated_data)
+
+        # 3. Process variants adjustments if part of the payload submission
+        if variants_data is not None:
+            keep_variant_ids = []
+
+            for variant_data in variants_data:
+                variant_id = variant_data.pop('id', None)
+
+                if variant_id:
+                    # Match variation by ID and update its attributes inline
+                    ProductVariant.objects.filter(id=variant_id, product=instance).update(**variant_data)
+                    keep_variant_ids.append(variant_id)
+                else:
+                    # No ID present means it's a completely new option added from Flutter
+                    new_variant = ProductVariant.objects.create(product=instance, **variant_data)
+                    keep_variant_ids.append(new_variant.id)
+
+            # Automatically clear options that were deleted by the vendor in the app UI
+            instance.variants.exclude(id__in=keep_variant_ids).delete()
+
+        return instance
 
 
 class ProductReviewSerializer(serializers.ModelSerializer):
@@ -122,28 +144,15 @@ class ProductReviewSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
-# serializers.py
 class BannerSerializer(serializers.ModelSerializer):
     image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Banner
-        fields = [
-            'id',
-            'title',
-            'subtitle',
-            'image_url',
-            'url',
-        ]
+        fields = ['id', 'title', 'subtitle', 'image_url', 'url']
 
     def get_image_url(self, obj):
-
         request = self.context.get('request')
-
         if obj.image:
-            return request.build_absolute_uri(
-                obj.image.url
-            )
-
+            return request.build_absolute_uri(obj.image.url)
         return None
-
