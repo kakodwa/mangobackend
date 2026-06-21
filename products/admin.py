@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite
+from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favorite,ProductVariant
 
 
 
@@ -7,6 +7,7 @@ from .models import Product, ProductImage, ProductReview,Banner,AppVersion,Favor
 admin.site.register(AppVersion)
 admin.site.register(Banner)
 admin.site.register(Favorite)
+admin.site.register(ProductVariant)
  
 
 class ProductImageInline(admin.TabularInline):
