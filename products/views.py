@@ -32,8 +32,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductSerializer
 
     def create(self, request, *args, **kwargs):
-        # 1. Create a mutable copy of the multipart request data payload
-        data = request.data.copy()
+        # 1. Convert QueryDict to a standard Python dict so nested arrays parse cleanly
+        data = {key: value for key, value in request.data.items()}
 
         # 2. Intercept variants text block string from multipart and decode it back to native Python objects
         if 'variants' in data and isinstance(data['variants'], str):
@@ -61,8 +61,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response(output_serializer.data, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
-        # Handle update workflows similarly to intercept raw variations payload fields
-        data = request.data.copy()
+        # Handle update workflows similarly to convert QueryDict data safely
+        data = {key: value for key, value in request.data.items()}
 
         if 'variants' in data and isinstance(data['variants'], str):
             try:
