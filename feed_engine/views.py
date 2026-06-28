@@ -1,8 +1,7 @@
 from django.db.models import Q
 from rest_framework.views import APIView
-from rest_framework.response import Response  # ✅ Ensured Response import is present
+from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from itertools import chain
 
 from hospitality.models import Lodge
 from events.models import Event
@@ -19,7 +18,7 @@ class UnifiedSearchView(APIView):
     
     def get(self, request, *args, **kwargs):
         query = request.GET.get('q', '').strip()
-        target_type = request.GET.get('type', 'all')
+        target_type = request.GET.get('type', 'all').strip().lower()
         
         district = request.GET.get('district', '').strip()
         category = request.GET.get('category', '').strip()
@@ -28,10 +27,9 @@ class UnifiedSearchView(APIView):
         combined_results = []
 
         # =========================================================
-        # 3. PRODUCTS FILTERING (OPTIMIZED WITH PREFETCH)
+        # 1. PRODUCTS FILTERING
         # =========================================================
         if target_type in ['all', 'product']:
-            # ✅ Added select_related and prefetch_related to load variations/shops efficiently
             products = Product.objects.filter(
                 is_active=True, 
                 shop__status='approved'
@@ -41,20 +39,19 @@ class UnifiedSearchView(APIView):
                 products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
             if district: 
                 products = products.filter(shop__district__iexact=district)
-            if category: 
-                products = products.filter(category__iexact=category)
+            if category and category.lower() != 'all': 
+                products = products.filter(category__icontains=category)
             
             for item in products:
                 item.result_type = 'product'
                 item.title = item.name
                 item.subtitle = item.description[:100] if item.description else ''
-                # city and district attributes are injected on product instances for uniform top-level access
                 item.city = item.shop.city
                 item.district = item.shop.district
                 combined_results.append(item)
 
         # =========================================================
-        # 1. EVENTS FILTERING
+        # 2. EVENTS FILTERING
         # =========================================================
         if target_type in ['all', 'event']:
             events = Event.objects.filter(status='published')
@@ -71,7 +68,7 @@ class UnifiedSearchView(APIView):
                 combined_results.append(item)
 
         # =========================================================
-        # 2. LODGES FILTERING
+        # 3. LODGES FILTERING
         # =========================================================
         if target_type in ['all', 'lodge']:
             lodges = Lodge.objects.filter(is_active=True)
@@ -79,8 +76,8 @@ class UnifiedSearchView(APIView):
                 lodges = lodges.filter(Q(name__icontains=query) | Q(description__icontains=query))
             if district: 
                 lodges = lodges.filter(district__iexact=district)
-            if category: 
-                lodges = lodges.filter(lodge_type__iexact=category)
+            if category and category.lower() != 'all': 
+                lodges = lodges.filter(lodge_type__icontains=category)
             
             for item in lodges:
                 item.result_type = 'lodge'
@@ -98,13 +95,14 @@ class UnifiedSearchView(APIView):
                 properties = properties.filter(Q(title__icontains=query) | Q(description__icontains=query))
             if district: 
                 properties = properties.filter(district__iexact=district)
-            if category: 
-                properties = properties.filter(property_type__iexact=category)
-            if listing_purpose: 
-                properties = properties.filter(listing_purpose=listing_purpose)
+            if category and category.lower() != 'all': 
+                properties = properties.filter(property_type__icontains=category)
+            if listing_purpose and listing_purpose.lower() != 'all': 
+                properties = properties.filter(listing_purpose__iexact=listing_purpose)
 
             for item in properties:
                 item.result_type = 'property'
+                item.title = item.title  # ✅ FIXED: Was missing completely, leading to dropped/blank items
                 item.subtitle = item.description[:100] if item.description else ''
                 combined_results.append(item)
 
@@ -117,7 +115,7 @@ class UnifiedSearchView(APIView):
                 shops = shops.filter(Q(name__icontains=query) | Q(description__icontains=query))
             if district: 
                 shops = shops.filter(district__iexact=district)
-            if category:
+            if category and category.lower() != 'all':
                 shops = shops.filter(category__icontains=category)
 
             for item in shops:
