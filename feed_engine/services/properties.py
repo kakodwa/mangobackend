@@ -29,7 +29,6 @@ class PropertyFeedService(BaseFeedService):
         # =====================================
         # PRIMARY CONTENT (PROPERTIES)
         # =====================================
-
         properties_qs = self.paginate(
             get_properties(),
             last_id,
@@ -53,19 +52,15 @@ class PropertyFeedService(BaseFeedService):
             context=serializer_context,
         ).data
 
-        feed = [
-            self.format_item(
-                "property",
-                 serialized_properties 
-                #property_item,
-            )
+        # FIXED: Populating from serialized_properties instead of an undefined 'feed' variable
+        flat_properties_stream = [
+            self.format_item("property", property_item)
             for property_item in serialized_properties
         ]
 
         # =====================================
         # SECONDARY CONTENT
         # =====================================
-
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
@@ -107,9 +102,9 @@ class PropertyFeedService(BaseFeedService):
         # =====================================
         # FEED INJECTION
         # =====================================
-
-        feed = FeedInjector.inject(
-            feed=feed,
+        mixed_stream = FeedInjector.inject(
+            items_list=flat_properties_stream,
+            injection_interval=12,
             products=trending_products,
             shops=featured_shops,
             events=upcoming_events,
@@ -118,8 +113,26 @@ class PropertyFeedService(BaseFeedService):
         )
 
         # =====================================
-        # RESPONSE
+        # POST-PROCESS: Group back into grids of max 12
         # =====================================
+        feed = []
+        current_grid = []
+
+        for item in mixed_stream:
+            if item["type"] == "property":
+                current_grid.append(item["data"])
+                
+                if len(current_grid) == 12:
+                    feed.append(self.format_item("property_grid", current_grid))
+                    current_grid = []
+            else:
+                if current_grid:
+                    feed.append(self.format_item("property_grid", current_grid))
+                    current_grid = []
+                feed.append(item)
+
+        if current_grid:
+            feed.append(self.format_item("property_grid", current_grid))
 
         return {
             "next_cursor": next_cursor,

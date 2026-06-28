@@ -49,12 +49,19 @@ class Order(models.Model):
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
+    product_variant = models.ForeignKey(
+        'products.ProductVariant', 
+        on_delete=models.PROTECT, 
+        null=True, 
+        blank=True
+    )
     quantity = models.IntegerField()
     unit_price = models.DecimalField(max_digits=10, decimal_places=2)
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
 
     def __str__(self):
-        return f"{self.product.name} x {self.quantity}"
+        variant_info = f" ({self.product_variant})" if self.product_variant else ""
+        return f"{self.product.name}{variant_info} x {self.quantity}"
 
 
 class SellerOrder(models.Model):

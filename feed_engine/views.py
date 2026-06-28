@@ -1,5 +1,6 @@
 from django.db.models import Q
 from rest_framework.views import APIView
+from rest_framework.response import Response  # ✅ Ensured Response import is present
 from rest_framework.permissions import AllowAny
 from itertools import chain
 
@@ -8,7 +9,6 @@ from events.models import Event
 from products.models import Product
 from realestate.models import Property
 from shops.models import Shop
-
 
 from .serializers import UnifiedSearchItemSerializer
 from .pagination import UnifiedSearchPagination
@@ -27,10 +27,16 @@ class UnifiedSearchView(APIView):
 
         combined_results = []
 
-
-        # 3. PRODUCTS FILTERING (District parsed from its related Shop)
+        # =========================================================
+        # 3. PRODUCTS FILTERING (OPTIMIZED WITH PREFETCH)
+        # =========================================================
         if target_type in ['all', 'product']:
-            products = Product.objects.filter(is_active=True, shop__status='approved')
+            # ✅ Added select_related and prefetch_related to load variations/shops efficiently
+            products = Product.objects.filter(
+                is_active=True, 
+                shop__status='approved'
+            ).select_related('shop').prefetch_related('variants')
+
             if query:
                 products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
             if district: 
@@ -47,7 +53,9 @@ class UnifiedSearchView(APIView):
                 item.district = item.shop.district
                 combined_results.append(item)
 
+        # =========================================================
         # 1. EVENTS FILTERING
+        # =========================================================
         if target_type in ['all', 'event']:
             events = Event.objects.filter(status='published')
             if query:
@@ -62,7 +70,9 @@ class UnifiedSearchView(APIView):
                 item.price = None
                 combined_results.append(item)
 
+        # =========================================================
         # 2. LODGES FILTERING
+        # =========================================================
         if target_type in ['all', 'lodge']:
             lodges = Lodge.objects.filter(is_active=True)
             if query:
@@ -79,7 +89,9 @@ class UnifiedSearchView(APIView):
                 item.price = None
                 combined_results.append(item)
 
+        # =========================================================
         # 4. PROPERTIES FILTERING
+        # =========================================================
         if target_type in ['all', 'property']:
             properties = Property.objects.filter(status='available', is_publicly_visible=True)
             if query:
@@ -96,7 +108,9 @@ class UnifiedSearchView(APIView):
                 item.subtitle = item.description[:100] if item.description else ''
                 combined_results.append(item)
 
+        # =========================================================
         # 5. SHOPS FILTERING
+        # =========================================================
         if target_type in ['all', 'shop']:
             shops = Shop.objects.filter(status='approved', is_active=True)
             if query:

@@ -19,7 +19,8 @@ class FeedInjector:
 
     @staticmethod
     def inject(
-        feed,
+        items_list,
+        injection_interval=12,  # Change to 12 or 18 based on preference
         products=None,
         events=None,
         shops=None,
@@ -48,12 +49,12 @@ class FeedInjector:
 
         last_block = None
 
-        for item in feed:
+        for item in items_list:
             result.append(item)
             counter += 1
 
-            # inject after every item
-            if counter % 5 != 0:
+            # Inject after reaching the specified single item count
+            if counter % injection_interval != 0:
                 continue
 
             choices = [

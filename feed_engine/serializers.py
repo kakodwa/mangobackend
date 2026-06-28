@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from hospitality.models import Lodge
 from events.models import Event
 from products.models import Product
+from products.models import ProductVariant # ✅ Imported your precise variant model matching the schema
 from realestate.models import Property
 from shops.models import Shop
 
@@ -13,8 +14,13 @@ User = get_user_model()
 # SUB-SERIALIZERS TO MAP FULL DETAILS PAYLOAD
 # ==========================================
 
-class EventDetailSerializer(serializers.ModelSerializer):
+# ✅ Added specialized nested variant serializer mapping your exact db fields
+class ProductVariantSubSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductVariant
+        fields = ['id', 'cj_variant_id', 'sku', 'attributes', 'wholesale_price', 'weight_g', 'stock']
 
+class EventDetailSerializer(serializers.ModelSerializer):
     regular_ticket_price = serializers.ReadOnlyField()
     total_tickets = serializers.ReadOnlyField()
     tickets_sold = serializers.ReadOnlyField()
@@ -30,9 +36,12 @@ class LodgeDetailSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class ProductDetailSerializer(serializers.ModelSerializer):
+    # ✅ Explicitly hooks the variants relationship using the related_name='variants' declared on your ForeignKey
+    variants = ProductVariantSubSerializer(many=True, read_only=True)
+
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = '__all__' # __all__ will now automatically package the custom nested variations array
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
     class Meta:

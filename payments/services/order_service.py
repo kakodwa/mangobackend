@@ -1,6 +1,6 @@
 from delivery.models import Delivery
 from django.db import transaction
-from products.models import Product
+from products.models import Product, ProductVariant # ✅ Critical: Added ProductVariant import
 from django.db.models import F
 from collections import defaultdict
 from payments.core.escrow import EscrowService
@@ -8,7 +8,6 @@ from orders.models import SellerOrder
 from decimal import Decimal
 import random
 import string
-
 
 
 def generate_code():
@@ -24,17 +23,30 @@ class OrderService:
 
         with transaction.atomic():
 
-            # =========================
-            # 1. STOCK DEDUCTION
-            # =========================
-            for item in order.items.select_related("product"):
-                updated = Product.objects.filter(
-                    id=item.product.id,
-                    stock__gte=item.quantity
-                ).update(stock=F("stock") - item.quantity)
+            # ========================================================
+            # 1. STOCK DEDUCTION (UPDATED TO HANDLE VARIANTS CORRECTLY)
+            # ========================================================
+            # ✅ Added product_variant to select_related to optimize DB queries
+            for item in order.items.select_related("product", "product_variant"):
+                
+                if item.product_variant:
+                    # 🔹 If a variant was purchased, deduct stock from that specific variant row
+                    updated = ProductVariant.objects.filter(
+                        id=item.product_variant.id,
+                        stock__gte=item.quantity
+                    ).update(stock=F("stock") - item.quantity)
 
-                if updated == 0:
-                    raise Exception(f"Out of stock {item.product.name}")
+                    if updated == 0:
+                        raise Exception(f"Out of stock for selected option on: {item.product.name}")
+                else:
+                    # 🔹 Fallback: if no variant is attached, deduct from global product pool
+                    updated = Product.objects.filter(
+                        id=item.product.id,
+                        stock__gte=item.quantity
+                    ).update(stock=F("stock") - item.quantity)
+
+                    if updated == 0:
+                        raise Exception(f"Out of stock {item.product.name}")
 
             order.status = "confirmed"
             order.save()
@@ -86,8 +98,5 @@ class OrderService:
                     beneficiary=seller_order.seller,
                     amount=seller_order.subtotal,
                     commission_rate=10,
-                    escrow_type="order")
- 
-
- 
-                
+                    escrow_type="order"
+                )

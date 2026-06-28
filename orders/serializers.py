@@ -34,6 +34,7 @@ class SellerOrderSerializer(serializers.ModelSerializer):
             "created_at",
         ]
 
+
     def get_items(self, obj):
         items = obj.order.items.filter(product__shop__owner=obj.seller)
 
@@ -42,6 +43,8 @@ class SellerOrderSerializer(serializers.ModelSerializer):
                 "id": i.id,
                 "product_name": i.product.name,
                 "product_image": i.product.image.url if i.product.image else "",
+                # ✅ Add variant details so sellers see exactly which options were chosen
+                "variant_attributes": i.product_variant.attributes if i.product_variant else {},
                 "quantity": i.quantity,
                 "total_price": i.total_price,
             }
@@ -85,6 +88,10 @@ def round6(value):
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
+    
+    # ✅ Add variant support (Assuming you have a ProductVariantSerializer)
+    product_variant = serializers.SerializerMethodField()
+    product_variant_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = OrderItem
@@ -92,11 +99,19 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'id',
             'product',
             'product_id',
+            'product_variant',       # ✅ Read variant properties
+            'product_variant_id',    # ✅ Write variant data
             'quantity',
             'unit_price',
             'total_price'
         ]
         read_only_fields = ['id', 'unit_price', 'total_price']
+
+    def get_product_variant(self, obj):
+        if obj.product_variant:
+            # Return raw string attributes map to the front end if serializer isn't ready
+            return obj.product_variant.attributes 
+        return None
 
 
 
@@ -140,80 +155,71 @@ class OrderSerializer(serializers.ModelSerializer):
 class OrderCreateSerializer(serializers.Serializer):
     items = OrderItemSerializer(many=True)
     delivery_address = serializers.CharField()
-
-    # GPS (frontend names)
-
     lat = serializers.FloatField(required=False, allow_null=True)
     lng = serializers.FloatField(required=False, allow_null=True)
-
-    # PHONE (frontend name)
     delivery_phone = serializers.CharField(required=False, allow_null=True)
 
     def create(self, validated_data):
         from .models import Order, OrderItem
-        from products.models import Product
+        from products.models import Product, ProductVariant  # Ensure ProductVariant is imported
         from decimal import Decimal
 
         user = self.context['request'].user
-        items_data = validated_data['items']
-
-        # =========================
-        # EXTRACT EXTRA FIELDS
-        # ========================
+        items_data = self.initial_data.get('items', []) # 👈 Use initial_data to capture raw JSON objects cleanly
 
         lat = round6(validated_data.pop('lat', None))
         lng = round6(validated_data.pop('lng', None))
         phone = validated_data.pop('delivery_phone', None)
 
-        # =========================
-        # CREATE ORDER
-        # =========================
+        # Create base order instance
         order = Order.objects.create(
             order_number=f"ORD-{user.id}-{Order.objects.count() + 1}",
             customer=user,
             delivery_address=validated_data['delivery_address'],
-
-            # ✅ GPS MAP
             delivery_latitude=lat,
             delivery_longitude=lng,
-
-            # ✅ PHONE MAP
             delivery_phone_number=phone,
-
             subtotal=0,
             total_amount=0
         )
 
         subtotal = Decimal('0.00')
 
-        # =========================
-        # CREATE ITEMS
-        # =========================
+        # Create individual items
         for item in items_data:
             product = Product.objects.get(id=item['product_id'])
-            qty = item['quantity']
+            qty = int(item['quantity'])
 
             if product.shop.owner == user:
                 raise serializers.ValidationError(
                     f"You cannot order your own product: {product.name}"
                 )
 
+            # ✅ FIX: Match the exact option attributes map back to its DB variant row entry instance
+            variant_attributes = item.get('variant_attributes')
+            variant = None
+            
+            if variant_attributes:
+                # Query your product variant table row rows to find the match containing these precise attributes
+                variant = ProductVariant.objects.filter(
+                    product=product,
+                    attributes=variant_attributes
+                ).first()
+
             unit_price = product.price
             total_price = unit_price * qty
-
             subtotal += total_price
 
             OrderItem.objects.create(
                 order=order,
                 product=product,
+                product_variant=variant,  # ✅ This will now save the variant accurately to the database!
                 quantity=qty,
                 unit_price=unit_price,
                 total_price=total_price
             )
 
-        # =========================
-        # FINAL TOTALS
-        # =========================
+        # Save totals
         order.subtotal = subtotal
         order.total_amount = subtotal
         order.save()

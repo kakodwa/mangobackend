@@ -29,7 +29,6 @@ class ShopFeedService(BaseFeedService):
         # =====================================
         # PRIMARY CONTENT (SHOPS)
         # =====================================
-
         shops_qs = self.paginate(
             get_shops(),
             last_id,
@@ -53,19 +52,15 @@ class ShopFeedService(BaseFeedService):
             context=serializer_context,
         ).data
 
-        feed = [
-            self.format_item(
-                "shop",
-                serialized_shops,
-                #shop,
-            )
+        # FIXED: Populating from serialized_shops instead of an undefined 'feed' variable
+        flat_shops_stream = [
+            self.format_item("shop", shop)
             for shop in serialized_shops
         ]
 
         # =====================================
         # SECONDARY CONTENT
         # =====================================
-
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
@@ -90,9 +85,7 @@ class ShopFeedService(BaseFeedService):
             context=serializer_context,
         ).data
 
-        # Avoid duplicating shops already
-        # displayed in the main feed
-
+        # Avoid duplicating shops already displayed in the main feed
         shop_ids = [
             shop.id
             for shop in shops
@@ -109,9 +102,9 @@ class ShopFeedService(BaseFeedService):
         # =====================================
         # FEED INJECTION
         # =====================================
-
-        feed = FeedInjector.inject(
-            feed=feed,
+        mixed_stream = FeedInjector.inject(
+            items_list=flat_shops_stream,
+            injection_interval=12,
             products=trending_products,
             shops=featured_shops,
             events=upcoming_events,
@@ -120,8 +113,26 @@ class ShopFeedService(BaseFeedService):
         )
 
         # =====================================
-        # RESPONSE
+        # POST-PROCESS: Group back into grids of max 12
         # =====================================
+        feed = []
+        current_grid = []
+
+        for item in mixed_stream:
+            if item["type"] == "shop":
+                current_grid.append(item["data"])
+                
+                if len(current_grid) == 12:
+                    feed.append(self.format_item("shop_grid", current_grid))
+                    current_grid = []
+            else:
+                if current_grid:
+                    feed.append(self.format_item("shop_grid", current_grid))
+                    current_grid = []
+                feed.append(item)
+
+        if current_grid:
+            feed.append(self.format_item("shop_grid", current_grid))
 
         return {
             "next_cursor": next_cursor,

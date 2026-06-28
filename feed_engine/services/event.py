@@ -29,7 +29,6 @@ class EventFeedService(BaseFeedService):
         # =====================================
         # PRIMARY EVENTS
         # =====================================
-
         events_qs = self.paginate(
             get_events(),
             last_id,
@@ -53,18 +52,15 @@ class EventFeedService(BaseFeedService):
             context=serializer_context,
         ).data
 
-        feed = [
-            self.format_item(
-                "event",
-                event,
-            )
+        # FIXED: Populating from serialized_events instead of an undefined 'feed' variable
+        flat_events_stream = [
+            self.format_item("event", event)
             for event in serialized_events
         ]
 
         # =====================================
         # SECONDARY CONTENT
         # =====================================
-
         trending_products = ProductSerializer(
             get_trending()[:10],
             many=True,
@@ -92,7 +88,6 @@ class EventFeedService(BaseFeedService):
         # =====================================
         # RECOMMENDED EVENTS
         # =====================================
-
         event_ids = [
             event.id
             for event in events
@@ -109,9 +104,9 @@ class EventFeedService(BaseFeedService):
         # =====================================
         # FEED INJECTION
         # =====================================
-
-        feed = FeedInjector.inject(
-            feed=feed,
+        mixed_stream = FeedInjector.inject(
+            items_list=flat_events_stream,
+            injection_interval=12,
             products=trending_products,
             shops=featured_shops,
             events=recommended_events,
@@ -120,8 +115,26 @@ class EventFeedService(BaseFeedService):
         )
 
         # =====================================
-        # RESPONSE
+        # POST-PROCESS: Group back into grids of max 12
         # =====================================
+        feed = []
+        current_grid = []
+
+        for item in mixed_stream:
+            if item["type"] == "event":
+                current_grid.append(item["data"])
+                
+                if len(current_grid) == 12:
+                    feed.append(self.format_item("event_grid", current_grid))
+                    current_grid = []
+            else:
+                if current_grid:
+                    feed.append(self.format_item("event_grid", current_grid))
+                    current_grid = []
+                feed.append(item)
+
+        if current_grid:
+            feed.append(self.format_item("event_grid", current_grid))
 
         return {
             "next_cursor": next_cursor,
