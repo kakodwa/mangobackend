@@ -90,8 +90,6 @@ class Shop(models.Model):
         """
         Generates a QR code only once pointing to a public tracking endpoint.
         """
-        # REPLACE WITH YOUR ACTUAL BACKEND DOMAIN IN PRODUCTION
-        # This endpoint tracks the click, then forwards the user to the app routing link
         backend_domain = "https://mangobackend-yayy.onrender.com" 
         qr_url = f"{backend_domain}/qr/shop/{self.id}/"
 
@@ -104,29 +102,32 @@ class Shop(models.Model):
         qr.add_data(qr_url)
         qr.make(fit=True)
 
-        image = qr.make_image(fill_color="#000000", back_color="#FFFFFF") # Crisp contrast
+        image = qr.make_image(fill_color="#000000", back_color="#FFFFFF")
 
         buffer = BytesIO()
         image.save(buffer, format="PNG")
+        
+        # 🔥 THE CRITICAL FIX: Rewind the buffer pointer to the beginning!
+        buffer.seek(0)
+        
         filename = f"shop_{self.id}.png"
-
         self.qr_code.save(filename, File(buffer), save=False)
 
     def save(self, *args, **kwargs):
-
         if not self.slug:
             self.slug = slugify(self.name)
 
-        # Save first so ID exists
         is_new = self.pk is None
 
+        # 1. Commit regular data values to database first
         super().save(*args, **kwargs)
 
-        # Generate QR only once
+        # 2. Safely trigger file stream compilation downstream
         if is_new and not self.qr_code:
             self.generate_qr()
-
+            # Use super().save to directly update fields, bypassing endless recursion loops
             super().save(update_fields=["qr_code"])
+
 
 class ShopReview(models.Model):
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='reviews')
