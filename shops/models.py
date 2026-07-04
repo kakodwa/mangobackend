@@ -115,14 +115,26 @@ class Shop(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.name)
+            # 1. Generate base slug
+            base_slug = slugify(self.name)
+            slug = base_slug
+            counter = 1
+            
+            # 2. Loop until a completely unique slug is found in the database
+            # We exclude the current instance (self.pk) if it's an update
+            Klass = self.__class__
+            while Klass.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+                
+            self.slug = slug
 
         is_new = self.pk is None
 
-        # 1. Commit regular data values to database first
+        # 3. Commit regular data values to database first
         super().save(*args, **kwargs)
 
-        # 2. Safely trigger file stream compilation downstream
+        # 4. Safely trigger file stream compilation downstream
         if is_new and not self.qr_code:
             self.generate_qr()
             # Use super().save to directly update fields, bypassing endless recursion loops
