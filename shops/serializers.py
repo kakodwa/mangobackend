@@ -12,7 +12,7 @@ class ShopSerializer(serializers.ModelSerializer):
         fields = ['id', 'owner', 'name', 'slug', 'description', 'logo', 'banner', 
                  'category', 'latitude', 'longitude', 'address', 'city', 'district',
                  'phone_number', 'email', 'status', 'is_active', 'rating', 
-                 'total_reviews','product_count', 'created_at']
+                 'total_reviews','product_count', 'created_at','qr_code','qr_scan_count',]
         read_only_fields = ['id', 'owner', 'status', 'created_at']
 
 

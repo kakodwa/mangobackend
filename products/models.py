@@ -22,6 +22,8 @@ class Product(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     original_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     discount_percentage = models.IntegerField(default=0)
+
+    aliexpress_url = models.URLField(blank=True, null=True)
     
     # Inventory
     stock = models.IntegerField(default=0)

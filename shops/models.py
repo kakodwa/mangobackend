@@ -1,8 +1,14 @@
+from io import BytesIO
+
+import qrcode
+from django.core.files import File
 from django.db import models
 from django.utils.text import slugify
+
 from users.models import User
-from django.contrib.contenttypes.fields import GenericRelation
 from mangohub.models import Review
+from django.contrib.contenttypes.fields import GenericRelation
+
 
 class Shop(models.Model):
     SHOP_STATUS_CHOICES = (
@@ -12,36 +18,65 @@ class Shop(models.Model):
         ('suspended', 'Suspended'),
     )
 
-    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='shops')
+    owner = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='shops'
+    )
+
     name = models.CharField(max_length=255, unique=True)
     slug = models.SlugField(unique=True)
+
     description = models.TextField()
-    reviews = GenericRelation(Review)
+
     logo = models.ImageField(upload_to='shop_logos/')
-    banner = models.ImageField(upload_to='shop_banners/', null=True, blank=True)
+    banner = models.ImageField(
+        upload_to='shop_banners/',
+        blank=True,
+        null=True
+    )
+
     category = models.CharField(max_length=100)
-    
+
+    # QR
+    qr_code = models.ImageField(
+        upload_to="shop_qr/",
+        blank=True,
+        null=True,
+    )
+
+    qr_scan_count = models.PositiveIntegerField(default=0)
+
     # Location
     latitude = models.DecimalField(max_digits=9, decimal_places=6)
     longitude = models.DecimalField(max_digits=9, decimal_places=6)
     address = models.CharField(max_length=255)
     city = models.CharField(max_length=100)
     district = models.CharField(max_length=100)
-    
+
     # Contact
     phone_number = models.CharField(max_length=20)
     email = models.EmailField()
-    
+
     # Status
-    status = models.CharField(max_length=20, choices=SHOP_STATUS_CHOICES, default='pending')
+    status = models.CharField(
+        max_length=20,
+        choices=SHOP_STATUS_CHOICES,
+        default='pending'
+    )
+
     is_active = models.BooleanField(default=True)
-    
-    # Ratings
-    rating = models.DecimalField(max_digits=3, decimal_places=2, default=0)
+
+    # Reviews
     reviews = GenericRelation(Review)
+    rating = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        default=0
+    )
     total_reviews = models.IntegerField(default=0)
-    
-    # Timestamps
+
+    # Dates
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -51,11 +86,47 @@ class Shop(models.Model):
     def __str__(self):
         return self.name
 
+    def generate_qr(self):
+        """
+        Generates a QR code only once pointing to a public tracking endpoint.
+        """
+        # REPLACE WITH YOUR ACTUAL BACKEND DOMAIN IN PRODUCTION
+        # This endpoint tracks the click, then forwards the user to the app routing link
+        backend_domain = "https://mangobackend-yayy.onrender.com" 
+        qr_url = f"{backend_domain}/qr/shop/{self.id}/"
+
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_url)
+        qr.make(fit=True)
+
+        image = qr.make_image(fill_color="#000000", back_color="#FFFFFF") # Crisp contrast
+
+        buffer = BytesIO()
+        image.save(buffer, format="PNG")
+        filename = f"shop_{self.id}.png"
+
+        self.qr_code.save(filename, File(buffer), save=False)
+
     def save(self, *args, **kwargs):
+
         if not self.slug:
             self.slug = slugify(self.name)
+
+        # Save first so ID exists
+        is_new = self.pk is None
+
         super().save(*args, **kwargs)
 
+        # Generate QR only once
+        if is_new and not self.qr_code:
+            self.generate_qr()
+
+            super().save(update_fields=["qr_code"])
 
 class ShopReview(models.Model):
     shop = models.ForeignKey(Shop, on_delete=models.CASCADE, related_name='reviews')

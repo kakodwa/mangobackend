@@ -29,15 +29,21 @@ from django.db.models.functions import TruncDay
 from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Sum, Count
-from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
+class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
+    login_url = 'admin_app:admin_login'
+    redirect_field_name = 'next'
 
-
-class AdminRequiredMixin(UserPassesTestMixin):
-    """Restricts access only to Authorized Staff/Global Admins."""
     def test_func(self):
-        return self.request.user.is_authenticated and self.request.user.is_staff
+        return self.request.user.is_staff
 
+    def handle_no_permission(self):
+        messages.error(
+            self.request,
+            "You must be logged in as an administrator."
+        )
+        return redirect(self.login_url)
 
 class AdminDashboardView(AdminRequiredMixin, TemplateView):
     template_name = 'console/dashboard.html'

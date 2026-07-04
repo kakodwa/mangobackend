@@ -5,6 +5,22 @@ from django_filters.rest_framework import DjangoFilterBackend
 from .models import Shop, ShopReview
 from django.db.models import Count, Q
 from .serializers import ShopSerializer, ShopCreateUpdateSerializer, ShopReviewSerializer
+from django.shortcuts import get_object_or_404, redirect
+
+
+
+def shop_qr_redirect(request, pk):
+    shop = get_object_or_404(Shop, pk=pk)
+
+    # Increment scan count metrics
+    shop.qr_scan_count += 1
+    shop.save(update_fields=["qr_scan_count"])
+
+    # Redirect to your FLUTTER web deployment or custom App Scheme.
+    # For a professional setup on Web & Mobile cross-compatibility:
+    frontend_domain = "https://mangobackend-yayy.onrender.com" 
+    
+    return redirect(f"{frontend_domain}/shop/{shop.id}")
 
 
 class ShopViewSet(viewsets.ModelViewSet):
