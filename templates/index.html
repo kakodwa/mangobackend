@@ -3,6 +3,7 @@
 <html>
 <head>
   <base href="{% static '' %}">
+  
   <link rel="manifest" href="{% static 'manifest.json' %}">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -28,9 +29,14 @@
 
   <link rel="icon" type="image/png" href="{% static 'favicon.png' %}"/>
   
+  <script>
+    window.flutterConfiguration = {
+      assetBase: "{% static '' %}",
+      canvasKitBaseUrl: "{% static 'canvaskit/' %}"
+    };
+  </script>
 </head>
 <body>
-
   <script src="{% static 'flutter_bootstrap.js' %}" async></script>
 </body>
 </html>
