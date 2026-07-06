@@ -3,7 +3,6 @@
 <html>
 <head>
   <base href="{% static '' %}">
-  
   <link rel="manifest" href="{% static 'manifest.json' %}">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -30,6 +29,14 @@
   <link rel="icon" type="image/png" href="{% static 'favicon.png' %}"/>
   
   <script>
+    // 🌟 FIX: Immediately capture the target deep link BEFORE Flutter loads and wipes it out
+    (function() {
+      var currentHref = window.location.href;
+      if (currentHref.indexOf('/#/product/') !== -1 || currentHref.indexOf('/#/shop/') !== -1) {
+        window.localStorage.setItem('deferred_deep_link', currentHref);
+      }
+    })();
+
     window.flutterConfiguration = {
       assetBase: "{% static '' %}",
       canvasKitBaseUrl: "{% static 'canvaskit/' %}"
