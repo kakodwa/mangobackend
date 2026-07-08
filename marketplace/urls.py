@@ -18,7 +18,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from mangohub import views
 from products.cj_views import ProductListView,ProductDetailView
-# 🌟 IMPORT JSONRESPONSE FOR INLINE ASSET SERVING
 from django.http import JsonResponse
 
 
@@ -116,6 +115,7 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("api/feed/", include("feed_engine.urls")),
     path("admin_app", include("admin_app.urls")),
+    path("", include("shops.urls")),
     
     # =================================================================
     # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
