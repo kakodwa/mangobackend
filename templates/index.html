@@ -2,39 +2,72 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
   <base href="{% static '' %}">
-  <link rel="manifest" href="{% static 'manifest.json' %}">
+
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
 
-  <title>{% if share_title %}{{ share_title }}{% else %}MangoHub{% endif %}</title>
-  <meta name="description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
-
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="{% if share_title %}{{ share_title }}{% else %}MangoHub Marketplace{% endif %}">
-  <meta property="og:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
-  <meta property="og:image" content="{% if share_image %}{{ share_image }}{% else %}{% static 'icons/Icon-512.png' %}{% endif %}">
-  <meta property="og:url" content="{{ request.build_absolute_uri }}">
-
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:title" content="{% if share_title %}{{ share_title }}{% else %}MangoHub Marketplace{% endif %}">
-  <meta property="twitter:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
-  <meta property="twitter:image" content="{% if share_image %}{{ share_image }}{% else %}{% static 'icons/Icon-512.png' %}{% endif %}">
-
+  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="MangoHub">
-  <link rel="apple-touch-icon" href="{% static 'icons/Icon-192.png' %}">
+  <meta name="apple-mobile-web-app-title" content="mangochi_marketplace">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <link rel="icon" type="image/png" href="{% static 'favicon.png' %}"/>
-  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>mangochi_marketplace</title>
+  <link rel="manifest" href="{% static 'manifest.json' %}">
   <script>
-    // 🌟 FIX: Immediately capture the target deep link BEFORE Flutter loads and wipes it out
+    // Enable client-side routing for deep links on web
+    // This allows routes like /product/2, /shop/1, etc. to work properly
     (function() {
-      var currentHref = window.location.href;
-      if (currentHref.indexOf('/#/product/') !== -1 || currentHref.indexOf('/#/shop/') !== -1) {
-        window.localStorage.setItem('deferred_deep_link', currentHref);
+      console.log('[WebRouting] Initializing client-side routing handler');
+      
+      // Store the current path before Flutter loads
+      const currentPath = window.location.pathname;
+      const currentHash = window.location.hash;
+      
+      console.log('[WebRouting] Current path:', currentPath);
+      console.log('[WebRouting] Current hash:', currentHash);
+      
+      // Handle path-based routing (e.g., /product/2)
+      if (currentPath && currentPath !== '/' && !currentPath.includes('flutter')) {
+        console.log('[WebRouting] Path detected, storing for app initialization');
+        window.localStorage.setItem('deferred_deep_link', currentPath);
       }
+      // Handle hash-based routing (e.g., /#/product/2)
+      else if (currentHash && currentHash !== '#') {
+        const hashPath = currentHash.replace('#', '');
+        console.log('[WebRouting] Hash path detected, storing:', hashPath);
+        window.localStorage.setItem('deferred_deep_link', hashPath);
+      }
+      
+      // Prevent default SPA behavior for deep links
+      window.addEventListener('popstate', function(event) {
+        console.log('[WebRouting] Pop state detected:', event);
+        const path = window.location.pathname;
+        if (path && path !== '/' && !path.includes('flutter')) {
+          console.log('[WebRouting] Storing popped path:', path);
+          window.localStorage.setItem('deferred_deep_link', path);
+          // Reload to let Flutter handle the routing
+          window.location.reload();
+        }
+      });
     })();
 
     window.flutterConfiguration = {
@@ -44,6 +77,14 @@
   </script>
 </head>
 <body>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
+
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
   <script src="{% static 'flutter_bootstrap.js' %}" async></script>
 </body>
 </html>
