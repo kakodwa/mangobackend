@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.mangochi.marketplace",
+      "sha256_cert_fingerprints": [
+        "FA:2B:6F:A8:13:5D:88:C2:56:AF:BC:90:12:34:56:78:9A:BC:DE:F0:12:34:56:78:9A:BC:DE:F0:12:34:56:78"
+      ]
+    }
+  }
+]

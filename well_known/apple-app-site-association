@@ -1,0 +1,19 @@
+def serve_ios_apple_association(request):
+    data = {
+        "applinks": {
+            "apps": [],
+            "details": [
+                {
+                    # 💡 Using a dummy placeholder since you don't have an Apple account yet
+                    "appID": "NOTAVAILABLEYET.com.mangochi.marketplace",
+                    "components": [
+                        { "/": "/shop/*" },
+                        { "/": "/product/*" },
+                        { "/": "/lodge/*" },
+                        { "/": "/event/*" }
+                    ]
+                }
+            ]
+        }
+    }
+    return JsonResponse(data)

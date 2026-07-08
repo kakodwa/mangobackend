@@ -18,6 +18,8 @@ from django.conf import settings
 from django.conf.urls.static import static
 from mangohub import views
 from products.cj_views import ProductListView,ProductDetailView
+# 🌟 IMPORT JSONRESPONSE FOR INLINE ASSET SERVING
+from django.http import JsonResponse
 
 
 # API Router
@@ -40,17 +42,63 @@ router.register(r'tickets', TicketViewSet, basename='tickets')
 router.register(r'reviews', ReviewViewSet, basename='reviews')
 router.register(r'ticket-validation', TicketValidationViewSet, basename='ticket-validation')
 
+
+# ===================================================================================
+# 📱 MOBILE APP LINK VERIFICATION LOGIC (Android Assetlinks & iOS App Association)
+# ===================================================================================
+def serve_android_assetlinks(request):
+    data = [
+        {
+            "relation": ["delegate_permission/common.handle_all_urls"],
+            "target": {
+                "namespace": "android_app",
+                # 🌟 TODO: Verify this matches your application's package id inside android/app/build.gradle
+                "package_name": "com.mangochi.marketplace", 
+                # 🌟 TODO: Replace this with your actual release SHA-256 fingerprint certificate string
+                "sha256_cert_fingerprints": [
+                    "00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:GG:HH:II:JJ:KK:LL:MM:NN:OO:PP:QQ:RR:SS:TT"
+                ]
+            }
+        }
+    ]
+    return JsonResponse(data, safe=False)
+
+def serve_ios_apple_association(request):
+    data = {
+        "applinks": {
+            "apps": [],
+            "details": [
+                {
+                    # 🌟 TODO: Replace "YOUR_APPLE_TEAM_ID" with your 10-character Apple Developer Team ID
+                    "appID": "YOUR_APPLE_TEAM_ID.com.mangochi.marketplace",
+                    "components": [
+                        { "/": "/shop/*" },
+                        { "/": "/product/*" },
+                        { "/": "/lodge/*" },
+                        { "/": "/event/*" }
+                    ]
+                }
+            ]
+        }
+    }
+    return JsonResponse(data)
+
+
 urlpatterns = [
+    # =================================================================
+    # 📱 0. MOBILE APP LINK HANDLERS (Placed high up for instant discovery)
+    # =================================================================
+    path('.well-known/assetlinks.json', serve_android_assetlinks),
+    path('.well-known/apple-app-site-association', serve_ios_apple_association),
+
     path('admin/', admin.site.urls),
 
     # =================================================================
     # 🎯 1. HIGH-PRIORITY EXPLICIT PAYMENT VIEWS (Checked First)
     # =================================================================
-    # Standard complete explicit API endpoints
     path('api/payments/webhook/paychangu/', paychangu_webhook, name='paychangu_webhook'),
     path('api/payments/payment/return/', payment_return_view, name='payment_return_view'),
 
-    # Fallback paths to process payments if PayChangu strips the '/api/' prefix context
     path('payments/webhook/paychangu/', paychangu_webhook, name='paychangu_webhook_fallback'),
     path('payments/payment/return/', payment_return_view, name='payment_return_fallback'),
     
@@ -68,12 +116,10 @@ urlpatterns = [
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path("api/feed/", include("feed_engine.urls")),
     path("admin_app", include("admin_app.urls")),
-    #path("", include("mangohub.urls")),
     
     # =================================================================
     # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
     # =================================================================
-    # This remains at the bottom so it handles automated ViewSet actions (like initiate_payment)
     path('api/', include(router.urls)),
     path('', views.serve_flutter_web_app, name='flutter_web_catchall'),
 ]
