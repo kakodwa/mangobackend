@@ -28,7 +28,7 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="{% static 'favicon.png' %}"/>
 
   <title>mangochi_marketplace</title>
   <link rel="manifest" href="{% static 'manifest.json' %}">
@@ -69,11 +69,6 @@
         }
       });
     })();
-
-    window.flutterConfiguration = {
-      assetBase: "{% static '' %}",
-      canvasKitBaseUrl: "{% static 'canvaskit/' %}"
-    };
   </script>
 </head>
 <body>

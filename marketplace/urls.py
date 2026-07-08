@@ -121,7 +121,7 @@ urlpatterns = [
     # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
     # =================================================================
     path('api/', include(router.urls)),
-    path('', views.serve_flutter_web_app, name='flutter_web_catchall'),
+    re_path(r'^(?!api/|admin/|payments/|\.well-known/).*$', views.serve_flutter_web_app, name='flutter_web_catchall'),
 ]
 
 if settings.DEBUG:
