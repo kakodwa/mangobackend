@@ -1,0 +1,8 @@
+# Netlify configuration for client-side routing
+# This ensures that all routes are redirected to index.html for Flutter to handle
+
+# Redirect all paths to index.html for single-page app routing
+/*    /index.html   200
+
+# Cache rules for service worker
+/flutter_service_worker.js  /flutter_service_worker.js  200

@@ -1,3 +1,4 @@
+from django.shortcuts import render, get_object_or_404, redirect
 from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,6 +7,11 @@ from .models import Shop, ShopReview
 from django.db.models import Count, Q
 from .serializers import ShopSerializer, ShopCreateUpdateSerializer, ShopReviewSerializer
 from django.shortcuts import get_object_or_404, redirect
+
+
+
+def download_app_view(request):
+    return render (request,'download_app.html')
 
 
 
