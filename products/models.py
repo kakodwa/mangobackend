@@ -136,7 +136,7 @@ class Favorite(models.Model):
 
 class Banner(models.Model):
     title = models.CharField(max_length=255, blank=True, null=True)
-    subtitle = models.CharField(max_length=255, blank=True)
+    subtitle = models.CharField(max_length=255, blank=True)  # install app | text banner
     image = models.ImageField(upload_to='banners/')
     url = models.URLField(blank=True, null=True)
     is_active = models.BooleanField(default=True)
@@ -144,16 +144,27 @@ class Banner(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.title if self.title else "banner"
+        return self.title or "banner"
 
     def save(self, *args, **kwargs):
-        # CRITICAL FIX: Only compress if it's a freshly uploaded file payload object instance
-        if self.image and hasattr(self.image, 'file') and not getattr(self, '_image_processed', False):
+        if (
+            self.image
+            and hasattr(self.image, "file")
+            and not getattr(self, "_image_processed", False)
+        ):
             try:
-                processed_file = process_and_compress_image(self.image, ratio_type="landscape", target_width=1400)
-                if processed_file:
-                    self.image = processed_file
-                    self._image_processed = True
+                # Don't crop or compress text banners or install app banners
+                if self.subtitle.lower().strip() not in ["text banner", "install app"]:
+                    processed_file = process_and_compress_image(
+                        self.image,
+                        ratio_type="landscape",
+                        target_width=1400,
+                    )
+                    if processed_file:
+                        self.image = processed_file
+
+                self._image_processed = True
+
             except Exception as e:
                 print(f"Skipping compression: {e}")
 
