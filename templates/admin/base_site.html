@@ -1,0 +1,37 @@
+{% extends "admin/base_site.html" %}
+{% load static %} <!-- This allows Django to find your static files -->
+
+<!-- 1. Malatrade Branding with Logo -->
+{% block branding %}
+<div id="site-name">
+    <a href="{% url 'admin:index' %}" style="display: flex; align-items: center; gap: 10px;">
+        <!-- The Logo Image -->
+        <img src="{% static 'img/logo.png' %}" alt="Malatrade Logo" style="height: 35px; width: auto; object-fit: contain;">
+        <span>Malatrade Administration</span>
+    </a>
+</div>
+{% endblock %}
+
+{% block title %}{{ title }} | Malatrade{% endblock %}
+
+<!-- 2. Original Green-Dominant Colors -->
+{% block extrahead %}
+{{ block.super }}
+<style>
+    :root {
+        --primary: #2e7d32;         
+        --primary-fg: #ffffff;      
+        --secondary: #ef6c00;       
+        --accent: #ff9800;          
+        
+        --header-bg: var(--primary);
+        --header-color: var(--primary-fg);
+        --header-link-color: #ffe0b2; 
+        
+        --link-color: #1b5e20;      
+        --link-hover-color: #ef6c00;
+        --button-bg: var(--primary);
+        --button-hover-bg: #1b5e20; 
+    }
+</style>
+{% endblock %}
