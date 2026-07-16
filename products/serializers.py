@@ -1,3 +1,4 @@
+from django.db import models
 from rest_framework import serializers
 from mangohub.serializers import ReviewSerializer
 from .models import Product, ProductImage, ProductReview, Banner, AppVersion, Favorite, ProductVariant
@@ -43,8 +44,8 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'shop', 'shop_name', 'name', 'slug',
-            'description', 'image', 'category', 'shop_district',
-            'price', 'original_price', 'discount_percentage',
+            'description', 'image', 'category', 'sub_category', 'brand', 'shop_district',
+            'price', 'original_price', 'discount_percentage','delivery_duration',
             'stock', 'sku', 'is_active', 'shop_phone_number',
             'rating', 'total_reviews',
             'images', 'created_at', 'owner_id', 'reviews',
@@ -74,6 +75,9 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'description',
             'image',
             'category',
+            'sub_category',
+            'brand',
+            'delivery_duration',
             'price',
             'original_price',
             'discount_percentage',
@@ -96,20 +100,19 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         product = super().create(validated_data)
         
         for variant_data in variants_data:
-            # Drop any frontend-passed dummy 'id' before creating
             variant_data.pop('id', None)
             ProductVariant.objects.create(product=product, **variant_data)
             
         return product
 
     def update(self, instance, validated_data):
-        # 1. Intercept the writable nested variations data array
+        # 1. Intercept nested variants
         variants_data = validated_data.pop('variants', None)
 
-        # 2. Safely perform standard product field column mutations
+        # 2. Update parent product fields
         instance = super().update(instance, validated_data)
 
-        # 3. Process variants adjustments if part of the payload submission
+        # 3. Handle variants safely
         if variants_data is not None:
             keep_variant_ids = []
 
@@ -117,19 +120,28 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                 variant_id = variant_data.pop('id', None)
 
                 if variant_id:
-                    # Match variation by ID and update its attributes inline
+                    # Update existing variant
                     ProductVariant.objects.filter(id=variant_id, product=instance).update(**variant_data)
                     keep_variant_ids.append(variant_id)
                 else:
-                    # No ID present means it's a completely new option added from Flutter
+                    # Create new variant
                     new_variant = ProductVariant.objects.create(product=instance, **variant_data)
                     keep_variant_ids.append(new_variant.id)
 
-            # Automatically clear options that were deleted by the vendor in the app UI
-            instance.variants.exclude(id__in=keep_variant_ids).delete()
+            # --- SAFE CLEANUP FIX ---
+            # Instead of deleting, identify variants to remove
+            to_remove = instance.variants.exclude(id__in=keep_variant_ids)
+            for variant in to_remove:
+                try:
+                    # Try to delete it if it has no protected relations (like OrderItems)
+                    variant.delete()
+                except models.ProtectedError:
+                    # If it has orders, keep the DB record but set stock to 0 
+                    # so it's effectively "disabled" for future buyers
+                    variant.stock = 0
+                    variant.save()
 
         return instance
-
 
 class ProductReviewSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)

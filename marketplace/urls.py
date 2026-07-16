@@ -113,6 +113,7 @@ urlpatterns = [
     path('api/tickets/check-in/', TicketCheckInAPIView.as_view(), name='ticket-checkin'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
     path("api/feed/", include("feed_engine.urls")),
     path("admin_app", include("admin_app.urls")),
     path("", include("shops.urls")),

@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
     'cloudinary_storage',
     'cloudinary',
+    'django_rest_passwordreset',
 ]
 
 MIDDLEWARE = [
@@ -225,3 +226,16 @@ else:
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
+
+
+# Configure the token generator to use short numbers (ideal for SMS or fast email verification)
+DJANGO_REST_PASSWORDRESET_TOKEN_CONFIG = {
+    "CLASS": "django_rest_passwordreset.tokens.RandomNumberTokenGenerator",
+    "OPTIONS": {
+        "min_number": 100000,  # Generates a clean 6-digit OTP
+        "max_number": 999999,
+    }
+}
+
+# Local development email settings (Prints emails straight to your console)
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

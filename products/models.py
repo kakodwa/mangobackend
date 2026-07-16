@@ -17,6 +17,15 @@ class Product(models.Model):
     image = models.ImageField(upload_to='product_images/')
 
     category = models.CharField(max_length=50, default='Fashion')
+    sub_category = models.CharField(max_length=50, blank=True, null=True, default='')
+    brand = models.CharField(max_length=50, blank=True, null=True, default='')
+
+    delivery_duration = models.CharField(
+        max_length=100, 
+        blank=True, 
+        default="2-4 business days",
+        help_text="Estimated time for delivery (e.g., 24 hours, 3-5 days)"
+    )
     
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
