@@ -24,9 +24,8 @@ def password_reset_token_created(sender, instance, reset_password_token, *args, 
 
     # 3. Deliver the email
     send_mail(
-        subject=subject,
-        message=message,
-        from_email="noreply@malatrade.com",
-        recipient_list=[user_email],
-        fail_silently=False,
-    )
+    subject=subject,
+    message=message,
+    from_email="no-reply@malatrade.com",
+    recipient_list=[user_email],
+    fail_silently=False,)
