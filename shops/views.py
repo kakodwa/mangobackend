@@ -24,7 +24,7 @@ def shop_qr_redirect(request, pk):
 
     # Redirect to your FLUTTER web deployment or custom App Scheme.
     # For a professional setup on Web & Mobile cross-compatibility:
-    frontend_domain = "https://mangobackend-yayy.onrender.com" 
+    frontend_domain = "https://malatrade.com" 
     
     return redirect(f"{frontend_domain}/shop/{shop.id}")
 
@@ -49,9 +49,7 @@ class ShopViewSet(viewsets.ModelViewSet):
         return ShopSerializer
 
     def create(self, request, *args, **kwargs):
-        print("🔥 DATA:", request.data)
-        print("🔥 USER:", request.user)
-        print("🔥 USER TYPE:", request.user.user_type)
+
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

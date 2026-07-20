@@ -9,7 +9,7 @@ from .serializers import ProductSerializer, FavoriteSerializer, BannerSerializer
 from rest_framework.filters import BaseFilterBackend
 from .filters import DistrictFilterBackend
 from django.db.models import Q
-import json  # 👈 Added to safely parse the incoming text JSON string values
+import json 
 
 
 class BannerViewSet(ReadOnlyModelViewSet):
@@ -48,7 +48,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         # 3. Pass massaged payload structure data down to the write serializer
         serializer = self.get_serializer(data=data)
         if not serializer.is_valid():
-            print("VALIDATION ERRORS:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         product = serializer.save(is_active=True)
@@ -74,7 +73,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         if not serializer.is_valid():
-            print("UPDATE VALIDATION ERRORS:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         product = serializer.save()
@@ -144,24 +142,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def add_images(self, request, pk=None):
         product = self.get_object()
 
-        print("\n🔥 ===== ADD IMAGES DEBUG =====")
-        print("🔥 Content-Type:", request.content_type)
-        print("🔥 POST DATA:", request.POST)
-        print("🔥 FILES RAW:", request.FILES)
-        print("🔥 FILES KEYS:", list(request.FILES.keys()))
-        print("🔥 FILE COUNT:", len(request.FILES.getlist('images')))
-        print("🔥 ============================\n")
 
         images = request.FILES.getlist('images')
         if not images:
-            print("❌ NO IMAGES RECEIVED")
+
             return Response({"error": "No images received"}, status=400)
 
         saved = []
         for img in images:
             obj = ProductImage.objects.create(product=product, image=img)
             saved.append(obj.id)
-            print("✅ SAVED IMAGE ID:", obj.id)
+ 
 
         return Response({"status": "success", "saved_images": saved})
 

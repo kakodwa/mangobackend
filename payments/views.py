@@ -58,8 +58,8 @@ def visa_checkout_view(request):
         "email": request.user.email,
         "first_name": request.user.first_name,
         "last_name": request.user.last_name,
-        "callback_url": "https://yourdomain.com/api/payments/paychangu_webhook/",
-        "return_url": "https://yourdomain.com/payment/return/?tx_ref=" + request.GET.get("tx_ref", ""),
+        "callback_url": "https://malatrade.com/api/payments/paychangu_webhook/",
+        "return_url": "https://malatrade.com/payment/return/?tx_ref=" + request.GET.get("tx_ref", ""),
         "title": "Payment",
         "description": "Visa Payment",
     }
@@ -88,8 +88,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
     )
     def initiate_payment(self, request):
 
-        print("REQUEST PAYMENT DATA:", request.data)
-
         serializer = PaymentInitiateSerializer(
             data=request.data,
             context={'request': request}
@@ -97,7 +95,6 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
         if not serializer.is_valid():
 
-            print("PAYMENT ERRORS:", serializer.errors)
 
             first_error = None
             for _, errors in serializer.errors.items():
@@ -139,9 +136,9 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                 "first_name": request.user.first_name or request.user.username,
                 "last_name": request.user.last_name or "Customer",
                 "tx_ref": payment.payment_reference,
-                "return_url": "https://mangobackend-yayy.onrender.com/api/payments/webhook/paychangu/",
+                "return_url": "https://malatrade.com/api/payments/webhook/paychangu/",
                 "callback_url": (
-                    "https://mangobackend-yayy.onrender.com/api/payments/payment/return/"
+                    "https://malatrade.com/api/payments/payment/return/"
                     f"?tx_ref={payment.payment_reference}"
                     f"&amount={payment.amount}"
                     f"&status=completed"
@@ -159,9 +156,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
             }
 
             try:
-                print(f"OUTGOING WEB REQUEST TO: {paychangu_url}")
-                print(f"PAYLOAD SENT: {paychangu_payload}")
-
+               
                 response = requests.post(
                     paychangu_url,
                     json=paychangu_payload,
@@ -169,8 +164,7 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                     timeout=15
                 )
                 
-                print(f"PAYCHANGU RESPONSE STATUS CODE: {response.status_code}")
-                print(f"PAYCHANGU RAW RESPONSE BODY: {response.text}")
+            
                 
                 res_data = response.json()
 
@@ -198,14 +192,14 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
                     }, status=status.HTTP_400_BAD_REQUEST)
 
             except requests.exceptions.RequestException as req_err:
-                print(f"CONNECTION ERROR EXCEPTION: {req_err}")
+     
                 return Response({
                     "success": False,
                     "message": "Could not establish a connection to the card processor network gateway."
                 }, status=status.HTTP_502_BAD_GATEWAY)
                 
             except Exception as general_err:
-                print(f"UNHANDLED VISA ERROR OCCURRED: {general_err}")
+             
                 return Response({
                     "success": False,
                     "message": "Internal gateway communication exception routine framework breakdown."
@@ -315,14 +309,14 @@ def fulfill_payment(payment, gateway_payload, source_name=""):
     and trigger downstream business logic handlers.
     """
     if payment.status == "completed":
-        print(f"ℹ️ [Central Fulfillment] Payment {payment.payment_reference} already processed.")
+
         return False
 
     with transaction.atomic():
         # 1. Flip database state to completed
         payment.status = "completed"
         payment.save()
-        print(f"✅ [Central Fulfillment] Payment {payment.payment_reference} marked completed via {source_name}.")
+
 
         # 2. Initialize Company Wallet metrics
         company_wallet, _ = CompanyWallet.objects.get_or_create(
@@ -343,10 +337,10 @@ def fulfill_payment(payment, gateway_payload, source_name=""):
         # 4. Fire the assigned backend action handler
         handler = HANDLERS.get(payment.purpose)
         if handler:
-            print(f"⚙️ [Central Fulfillment] Executing processor handler for: {payment.purpose}")
+
             handler(payment, company_wallet)
         else:
-            print(f"⚠️ [Central Fulfillment] Warning: No business handler registered for purpose: {payment.purpose}")
+            print(f"[Central Fulfillment] Warning: No business handler registered for purpose: {payment.purpose}")
 
         # 5. Record the webhook transaction history logs smoothly
         PaymentWebhook.objects.create(
@@ -451,16 +445,16 @@ def payment_return_view(request):
     status_value = request.GET.get("status", "pending").lower()
     amount = request.GET.get("amount", "")
 
-    print(f"🔄 RETURN VIEW ACTIVATED FOR REF: {tx_ref} | STATUS: {status_value}")
+
 
     if tx_ref and status_value in ["success", "completed"]:
         try:
             payment = Payment.objects.get(payment_reference=tx_ref)
-            print('Pass')
+       
             # Call our single shared function!
             #fulfill_payment(payment, dict(request.GET), source_name="redirect_return_view")
         except Payment.DoesNotExist:
-            print(f"❌ ERROR: Payment object reference '{tx_ref}' not found in database.")
+            print(f"ERROR: Payment object reference '{tx_ref}' not found in database.")
 
     context = {
         "tx_ref": tx_ref,
@@ -477,7 +471,7 @@ def payment_return_view(request):
 @permission_classes([AllowAny])
 def paychangu_webhook(request):
     data = request.data
-    print("INCOMING WEBHOOK PAYLOAD:", data)
+
 
     # Robust tracking ID extractor handles both Mobile Money (charge_id) and Visa (tx_ref)
     charge_id = data.get("charge_id") or data.get("tx_ref") or data.get("data", {}).get("tx_ref") or ""
@@ -490,7 +484,6 @@ def paychangu_webhook(request):
     # 🔄 ROUTE 1: WITHDRAWAL / CASHOUT
     # =================================================================
     if str(charge_id).startswith("WD-"):
-        print(f"🔄 Processing Payout/Withdrawal reference: {charge_id}")
         return fulfill_withdrawal(charge_id, status_value, data)
     # =================================================================
     # 💳 ROUTE 2: INCOMING PAYMENT / DEPOSIT

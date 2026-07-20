@@ -76,21 +76,13 @@ class EventViewSet(viewsets.ModelViewSet):
     # CREATE EVENT
     # ========================
     def create(self, request, *args, **kwargs):
-        print("\n🚀 CREATE HIT")
-        print("REQUEST DATA:", request.data)
-        print("FILES:", request.FILES)
-
+   
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            print("\n❌ SERIALIZER ERRORS:")
-            print(serializer.errors)
             return Response(serializer.errors, status=400)
 
         self.perform_create(serializer)
-
-        print("\n✅ CREATE SUCCESS")
-
         return Response(serializer.data, status=201)
 
     # =========================
@@ -99,12 +91,7 @@ class EventViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def perform_create(self, serializer):
 
-        print("\n================ EVENT CREATE START ================")
-        print("RAW REQUEST DATA:", self.request.data)
-
         raw_ticket_types = self.request.data.get("ticket_types", [])
-        print("RAW ticket_types TYPE:", type(raw_ticket_types))
-        print("RAW ticket_types VALUE:", raw_ticket_types)
 
         # =========================
         # FIX: if sent as string → convert to list
@@ -114,24 +101,18 @@ class EventViewSet(viewsets.ModelViewSet):
         if isinstance(raw_ticket_types, str):
             try:
                 ticket_types_data = json.loads(raw_ticket_types)
-                print("PARSED ticket_types:", ticket_types_data)
             except Exception as e:
-                print("❌ ticket_types JSON parse error:", str(e))
                 ticket_types_data = []
 
         # =========================
         # SAVE EVENT
         # =========================
         event = serializer.save(organizer=self.request.user)
-        print("✅ EVENT CREATED:", event.id)
-
         # =========================
         # CREATE TICKET TYPES
         # =========================
         for t in ticket_types_data:
             try:
-                print("➡ Creating ticket type:", t)
-
                 EventTicketType.objects.create(
                     event=event,
                     name=t.get('name'),
@@ -141,9 +122,9 @@ class EventViewSet(viewsets.ModelViewSet):
                 )
 
             except Exception as e:
-                print("❌ ERROR CREATING TICKET TYPE:", e)
+                print("ERROR CREATING TICKET TYPE:", e)
 
-        print("================ EVENT CREATE END ================")
+
 
     # =========================
     # FEATURED EVENTS
@@ -192,11 +173,6 @@ class TicketViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     @action(detail=False, methods=['post'])
     def purchase(self, request):
-
-        print("\n========== PURCHASE DEBUG ==========")
-        print("REQUEST DATA =>", request.data)
-        print("USER =>", request.user)
-        print("====================================\n")
 
         serializer = PurchaseTicketSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -453,8 +429,6 @@ class TicketCheckInAPIView(APIView):
             })
 
         except Exception as e:
-            print("❌ CHECK-IN ERROR:", str(e))
-
             return Response({
                 "status": "error",
                 "message": "Internal server error during check-in"

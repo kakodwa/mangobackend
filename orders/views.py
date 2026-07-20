@@ -21,20 +21,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Order.objects.filter(customer=user)
 
 
-    ''''def get_queryset(self):
-        user = self.request.user
-
-        return Order.objects.filter(
-            Q(customer=user) |
-            Q(items__product__shop__owner=user)).distinct().order_by('-id')'''
-
     def get_serializer_class(self):
         if self.action == 'create':
             return OrderCreateSerializer
         return OrderSerializer
 
     def create(self, request, *args, **kwargs):
-        print("REQUEST DATA:", request.data)
 
         serializer = OrderCreateSerializer(
             data=request.data,
@@ -42,7 +34,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
 
         if not serializer.is_valid():
-            print("SERIALIZER ERRORS:", serializer.errors)
+
             return Response(serializer.errors, status=400)
 
         order = serializer.save()

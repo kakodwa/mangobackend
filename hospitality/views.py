@@ -85,30 +85,18 @@ class LodgeViewSet(viewsets.ModelViewSet):
     # FULL CREATE DEBUG
     # =========================
     def create(self, request, *args, **kwargs):
-        print("\n🔥 CREATE REQUEST DEBUG")
-        print("DATA:", request.data)
-        print("FILES:", request.FILES)
-
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            print("\n❌ SERIALIZER ERRORS:", serializer.errors)
-
             return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
-        print("\n✅ CREATED SUCCESSFULLY")
         return Response(serializer.data,status=status.HTTP_201_CREATED)
 
     # =========================
     # FULL UPDATE DEBUG
     # =========================
     def update(self, request, *args, **kwargs):
-
-        print("\n🔥 ===== UPDATE REQUEST DEBUG =====")
-        print("DATA:", request.data)
-        print("FILES:", request.FILES)
-        print("CONTENT TYPE:", request.content_type)
 
         partial = kwargs.pop('partial', False)
 
@@ -123,8 +111,6 @@ class LodgeViewSet(viewsets.ModelViewSet):
 
         if not serializer.is_valid():
 
-            print("\n❌ UPDATE ERRORS ❌")
-            print(serializer.errors)
 
             return Response(
                 serializer.errors,
@@ -133,7 +119,7 @@ class LodgeViewSet(viewsets.ModelViewSet):
 
         serializer.save()
 
-        print("✅ LODGE UPDATED:", instance.id)
+
 
         return Response(
             serializer.data,
@@ -144,13 +130,11 @@ class LodgeViewSet(viewsets.ModelViewSet):
 
         user = self.request.user
 
-        print("\n🔥 ===== LODGE CREATE DEBUG =====")
-        print("🔥 USER:", user)
-        print("🔥 USER TYPE:", getattr(user, "user_type", None))
+
 
         lodge = serializer.save(owner=user)
 
-        print("✅ CREATED:", lodge.id)
+
 
     @action(
         detail=False,
@@ -160,15 +144,13 @@ class LodgeViewSet(viewsets.ModelViewSet):
     def my_lodges(self, request):
 
         try:
-            print("=== MY LODGES DEBUG START ===")
-            print("User:", request.user)
-            print("Authenticated:", request.user.is_authenticated)
+  
 
             lodges = Lodge.objects.filter(
                 owner=request.user
             ).order_by('-created_at')
 
-            print("Lodges found:", lodges.count())
+     
 
             serializer = self.get_serializer(
                 lodges,
@@ -176,8 +158,7 @@ class LodgeViewSet(viewsets.ModelViewSet):
                 context={"request": request}
             )
 
-            print("Serialization successful")
-            print("=== MY LODGES DEBUG END ===")
+   
 
             return Response(serializer.data)
 
@@ -205,12 +186,10 @@ class RoomViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            print("❌ VALIDATION ERROR:", serializer.errors)
             return Response(serializer.errors, status=400)
 
         self.perform_create(serializer)
 
-        print("✅ ROOM CREATED:", serializer.data)
 
         return Response(serializer.data, status=201)
 
@@ -286,7 +265,6 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         serializer.is_valid(raise_exception=False)
         if not serializer.is_valid():
-            print("❌ SERIALIZER ERRORS:", serializer.errors)
             return Response(serializer.errors, status=400)
 
         serializer.save(
@@ -309,7 +287,6 @@ class BookingViewSet(viewsets.ModelViewSet):
         bookings = Booking.objects.filter(lodge__owner=user)
 
         serializer = self.get_serializer(bookings, many=True)
-        print(serializer.data)
         return Response(serializer.data)
 
      

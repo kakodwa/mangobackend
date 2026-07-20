@@ -31,13 +31,8 @@ class PropertyViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
 
         except Exception as e:
-            print("❌ PROPERTY CREATE VALIDATION ERROR:")
-            print(serializer.errors)
-            print("RAW EXCEPTION:", e)
-
             raise
 
-        print("✅ VALID DATA:", serializer.validated_data)
         self.perform_create(serializer)
 
         return Response(serializer.data, status=201)
@@ -53,8 +48,6 @@ class PropertyViewSet(viewsets.ModelViewSet):
             Q(city=property_obj.city),
             is_publicly_visible=True).exclude(id=property_obj.id)
 
-
-        print(related_qs)
 
         if not related_qs.exists():
             related_qs = Property.objects.filter(

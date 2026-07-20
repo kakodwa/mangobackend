@@ -397,7 +397,7 @@ def payment_return_view(request):
     status_value = request.GET.get("status", "pending").lower()
     amount = request.GET.get("amount", "")
 
-    print(f"🔄 RETURN VIEW ACTIVATED FOR REF: {tx_ref} | STATUS: {status_value}")
+    print(f"RETURN VIEW ACTIVATED FOR REF: {tx_ref} | STATUS: {status_value}")
 
     # 2. Only process if we have a valid reference code and the gateway states it's successful
     if tx_ref and status_value in ["success", "completed"]:
@@ -412,7 +412,7 @@ def payment_return_view(request):
                     # Update status to completed right here
                     payment.status = "completed"
                     payment.save()
-                    print(f"✅ DATABASE SUCCESS: Payment {tx_ref} marked completed inside return view.")
+                    print(f"DATABASE SUCCESS: Payment {tx_ref} marked completed inside return view.")
 
                     # Fetch or build your company balance record tracking model
                     company_wallet, _ = CompanyWallet.objects.get_or_create(
@@ -433,10 +433,10 @@ def payment_return_view(request):
                     # Extract and execute the right function handler
                     handler = HANDLERS.get(payment.purpose)
                     if handler:
-                        print(f"⚙️ EXECUTING BUSINESS HANDLER FOR: {payment.purpose}")
+                        print(f"EXECUTING BUSINESS HANDLER FOR: {payment.purpose}")
                         handler(payment, company_wallet)
                     else:
-                        print(f"⚠️ WARNING: No business handler registered for purpose: {payment.purpose}")
+                        print(f"WARNING: No business handler registered for purpose: {payment.purpose}")
 
                     # Mimic the webhook's record logger to ensure history tables stay accurate
                     PaymentWebhook.objects.create(
@@ -450,10 +450,10 @@ def payment_return_view(request):
                         processed=True
                     )
             else:
-                print(f"ℹ️ INFO: Payment {tx_ref} was already completed previously.")
+                print(f"INFO: Payment {tx_ref} was already completed previously.")
 
         except Payment.DoesNotExist:
-            print(f"❌ ERROR: Payment object with reference '{tx_ref}' not found in database.")
+            print(f"ERROR: Payment object with reference '{tx_ref}' not found in database.")
 
     # 3. Build context metrics and render your HTML page
     context = {

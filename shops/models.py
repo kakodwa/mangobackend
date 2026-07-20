@@ -90,7 +90,7 @@ class Shop(models.Model):
         """
         Generates a QR code only once pointing to a public tracking endpoint.
         """
-        backend_domain = "https://mangobackend-yayy.onrender.com" 
+        backend_domain = "https://malatrade.com" 
         qr_url = f"{backend_domain}/qr/shop/{self.id}/"
 
         qr = qrcode.QRCode(

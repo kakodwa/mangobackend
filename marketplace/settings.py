@@ -92,6 +92,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # Database Configuration
+
 if DEBUG:
     DATABASES = {
         'default': {
@@ -99,12 +100,23 @@ if DEBUG:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+
 else:
     DATABASES = {
-        'default': dj_database_url.config(
-            default=os.getenv("DATABASE_URL"),
-            conn_max_age=600,
-        )
+        'default': {
+            'ENGINE': config(
+                'DB_ENGINE',
+                default='django.db.backends.mysql'
+            ),
+            'NAME': config('DB_NAME'),
+            'USER': config('DB_USER'),
+            'PASSWORD': config('DB_PASSWORD'),
+            'HOST': config('DB_HOST', default='localhost'),
+            'PORT': config('DB_PORT', default='3306'),
+            'OPTIONS': {
+                'charset': 'utf8mb4',
+            },
+        }
     }
 
 # Password validation
@@ -199,25 +211,17 @@ if not DEBUG:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.getenv('CLOUD_NAME'),
-    'API_KEY': os.getenv('API_KEY'),
-    'API_SECRET': os.getenv('API_SECRET'),
-}
-# Tell Django/WhiteNoise not to panic over missing source maps (.map files)
-WHITENOISE_MANIFEST_STRICT = False
+MEDIA_URL = "/media/"
 
 if DEBUG:
-    STORAGES = {
-        "default": {
-            "BACKEND": "django.core.files.storage.FileSystemStorage",
-        },
-        "staticfiles": {
-            # This compresses files beautifully for faster production loading
-            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage", 
-        },
+    MEDIA_ROOT = BASE_DIR / "media"
+
+    CLOUDINARY_STORAGE = {
+        "CLOUD_NAME": os.getenv("CLOUD_NAME"),
+        "API_KEY": os.getenv("API_KEY"),
+        "API_SECRET": os.getenv("API_SECRET"),
     }
-else:
+
     STORAGES = {
         "default": {
             "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
@@ -226,6 +230,24 @@ else:
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
+
+else:
+    MEDIA_ROOT = os.path.join("/home/malanxux/public_html", "media")
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        },
+    }
+    
+    
+# Tell Django/WhiteNoise not to panic over missing source maps (.map files)
+WHITENOISE_MANIFEST_STRICT = False
+
+
 
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"

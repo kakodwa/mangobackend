@@ -21,9 +21,6 @@ class WalletViewSet(viewsets.ViewSet):
     def transactions(self, request):
         """Get wallet transactions"""
         wallet, created = Wallet.objects.get_or_create(user=request.user)
-        print("Wallet Balance:", wallet.balance)
-        print("Wallet ID:", wallet.id)
-        print("User:", request.user.username)
         transactions = wallet.transactions.all()
         serializer = WalletTransactionSerializer(transactions, many=True)
         return Response(serializer.data)
@@ -38,11 +35,9 @@ class WalletViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def request_withdrawal(self, request):
-        print("RAW DATA FROM FLUTTER:", request.data)
         serializer = WithdrawalCreateSerializer(data=request.data, context={'request': request})
         
         if not serializer.is_valid():
-            print("SERIALIZER ERRORS:", serializer.errors)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
         amount = serializer.validated_data['amount']
@@ -109,7 +104,6 @@ class WalletViewSet(viewsets.ViewSet):
                 
         except Exception as e:
             import traceback
-            print("❌ WITHDRAWAL CRASHED WITH ERROR:", str(e))
             traceback.print_exc()
             return Response({"error": f"An internal error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
