@@ -35,48 +35,33 @@
   <link rel="apple-touch-icon" sizes="120x120" href="{% static 'img/icon/apple-icon-120x120.png' %}">
   <link rel="apple-touch-icon" sizes="152x152" href="{% static 'img/icon/apple-icon-152x152.png' %}">
   <link rel="apple-touch-icon" sizes="180x180" href="{% static 'img/icon/apple-icon-180x180.png' %}">
-  <link rel="icon" type="image/png" sizes="192x192"  href="{% static 'img/icon/android-icon-192x192.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'img/icon/android-icon-192x192.png' %}">
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'img/icon/favicon-32x32.png' %}">
   <link rel="icon" type="image/png" sizes="96x96" href="{% static 'img/icon/favicon-96x96.png' %}">
   <link rel="icon" type="image/png" sizes="16x16" href="{% static 'img/icon/favicon-16x16.png' %}">
-  <link rel="manifest" href="{% static 'img/icon/manifest.json' %}">
+
   <meta name="msapplication-TileColor" content="#ffffff">
   <meta name="msapplication-TileImage" content="/ms-icon-144x144.png">
-  <meta name="theme-color" content="#ffffff">
-  
-   <script>
+  <meta name="theme-color" content="#FF8C00">
+
+  <script>
     // Enable client-side routing for deep links on web
-    // This allows routes like /product/2, /shop/1, etc. to work properly
     (function() {
       console.log('[WebRouting] Initializing client-side routing handler');
-      
-      // Store the current path before Flutter loads
       const currentPath = window.location.pathname;
       const currentHash = window.location.hash;
       
-      console.log('[WebRouting] Current path:', currentPath);
-      console.log('[WebRouting] Current hash:', currentHash);
-      
-      // Handle path-based routing (e.g., /product/2)
       if (currentPath && currentPath !== '/' && !currentPath.includes('flutter')) {
-        console.log('[WebRouting] Path detected, storing for app initialization');
         window.localStorage.setItem('deferred_deep_link', currentPath);
-      }
-      // Handle hash-based routing (e.g., /#/product/2)
-      else if (currentHash && currentHash !== '#') {
+      } else if (currentHash && currentHash !== '#') {
         const hashPath = currentHash.replace('#', '');
-        console.log('[WebRouting] Hash path detected, storing:', hashPath);
         window.localStorage.setItem('deferred_deep_link', hashPath);
       }
       
-      // Prevent default SPA behavior for deep links
       window.addEventListener('popstate', function(event) {
-        console.log('[WebRouting] Pop state detected:', event);
         const path = window.location.pathname;
         if (path && path !== '/' && !path.includes('flutter')) {
-          console.log('[WebRouting] Storing popped path:', path);
           window.localStorage.setItem('deferred_deep_link', path);
-          // Reload to let Flutter handle the routing
           window.location.reload();
         }
       });
@@ -85,5 +70,51 @@
 </head>
 <body>
   <script src="{% static 'flutter_bootstrap.js' %}" async></script>
+
+  <!-- PWA INSTALLATION HANDLER -->
+  <script>
+    let deferredPrompt = null;
+    window.isPwaInstallAvailable = false; // Persistent flag for Flutter initState check
+
+    // Triggered when browser verifies PWA installation criteria
+    window.addEventListener('beforeinstallprompt', (event) => {
+      console.log('[PWA] Install prompt available');
+      event.preventDefault();
+      deferredPrompt = event;
+      window.isPwaInstallAvailable = true; // Set flag immediately
+
+      // Dispatch custom event for Flutter listener
+      window.dispatchEvent(new CustomEvent('pwaInstallAvailable'));
+    });
+
+    // Directly callable by Flutter
+    window.installApp = async function() {
+      console.log('[PWA] Install requested from Flutter');
+
+      if (!deferredPrompt) {
+        console.log('[PWA] Deferred prompt unavailable or already consumed');
+        return;
+      }
+
+      deferredPrompt.prompt();
+
+      const result = await deferredPrompt.userChoice;
+      console.log('[PWA] User choice outcome:', result.outcome);
+
+      deferredPrompt = null;
+      window.isPwaInstallAvailable = false;
+
+      // Notify Flutter to hide the button
+      window.dispatchEvent(new CustomEvent('pwaInstalled'));
+    };
+
+    // Detect when app gets successfully installed
+    window.addEventListener('appinstalled', () => {
+      console.log('[PWA] App successfully installed');
+      deferredPrompt = null;
+      window.isPwaInstallAvailable = false;
+      window.dispatchEvent(new CustomEvent('pwaInstalled'));
+    });
+  </script>
 </body>
 </html>
