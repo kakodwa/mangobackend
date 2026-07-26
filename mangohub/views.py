@@ -41,8 +41,8 @@ def get_meta_from_url(request, full_path, path_token, model_class, title_field='
                 img_url = img_attr
 
             return {
-                "share_title": f"{title} | MangoHub",
-                "share_desc": desc[:150] if desc else "Explore listings on MangoHub.",
+                "share_title": f"{title} | MalaTrade",
+                "share_desc": desc[:150] if desc else "Explore listings on MalaTrade.",
                 "share_image": img_url if img_url else None
             }
         except (ValueError, IndexError, model_class.DoesNotExist):
@@ -54,9 +54,9 @@ def get_meta_from_url(request, full_path, path_token, model_class, title_field='
 def serve_flutter_web_app(request):
     # Establish strict domain fallbacks
     context = {
-        "share_title": "MangoHub Marketplace",
+        "share_title": "MalaTrade Marketplace",
         "share_desc": "Explore products, shops, lodges, events, and properties.",
-        "share_image": "https://yourdomain.com/static/icons/Icon-512.png"
+        "share_image": "https://malatrade.com/static/icons/Icon-512.png"
     }
     
     full_path = request.path 
