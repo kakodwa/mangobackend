@@ -2,7 +2,7 @@ from ..services.base import BaseFeedService
 from ..services.cursor import Cursor
 from ..services.injector import FeedInjector
 
-# 1. Update selector import
+# 1. Selector imports
 from ..selectors.products import get_products, get_trending, get_random_category_products
 from ..selectors.shops import get_featured
 from ..selectors.events import get_upcoming
@@ -61,11 +61,11 @@ class HomeFeedService(BaseFeedService):
             context=serializer_context
         ).data
 
-        # 2. Fetch and serialize the random category section
+        # Fetch and serialize the random category section
         random_cat_data = get_random_category_products()
         category_section = None
 
-        if random_cat_data["category"]:
+        if random_cat_data.get("category"):
             serialized_category_products = ProductSerializer(
                 random_cat_data["products"],
                 many=True,
@@ -105,12 +105,16 @@ class HomeFeedService(BaseFeedService):
         # -----------------------------
         # INJECT CONTENT
         # -----------------------------
-        # 3. Pass `category_section` into FeedInjector
+        # Merge category_section into trending_products or pass safely
+        # depending on FeedInjector's parameters
+        inject_products = list(trending_products)
+        if category_section:
+            inject_products.append(category_section)
+
         mixed_stream = FeedInjector.inject(
             items_list=flat_products_stream,
             injection_interval=12,
-            products=trending_products,
-            category_section=category_section,  # <-- Added here
+            products=inject_products,  # 👈 Passed inside products safely without triggering TypeError
             shops=featured_shops,
             events=upcoming_events,
             properties=featured_properties,
@@ -124,7 +128,7 @@ class HomeFeedService(BaseFeedService):
         current_grid = []
 
         for item in mixed_stream:
-            if item["type"] == "product":
+            if item.get("type") == "product":
                 current_grid.append(item["data"])
                 
                 if len(current_grid) == 12:
