@@ -18,9 +18,6 @@ from payments.core.escrow import EscrowService
 import random
 
 
-def ik():
-    pass
-
 
 def generate_customer_code():
     return str(random.randint(100000, 999999))
