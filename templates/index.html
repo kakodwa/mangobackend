@@ -7,19 +7,19 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
 
-  <title>{% if share_title %}{{ share_title }}{% else %}MalaTrade{% endif %}</title>
+  <title>{% if share_title %}{{ share_title }}{% else %}MalaTrade Marketplace{% endif %}</title>
   <meta name="description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MalaTrade.{% endif %}">
 
   <meta property="og:type" content="website">
   <meta property="og:title" content="{% if share_title %}{{ share_title }}{% else %}MalaTrade Marketplace{% endif %}">
-  <meta property="og:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
-  <meta property="og:image" content="{% if share_image %}{{ share_image }}{% else %}{% static 'icons/Icon-512.png' %}{% endif %}">
+  <meta property="og:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MalaTrade.{% endif %}">
+  <meta property="og:image" content="{% if share_image %}{{ share_image }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'icons/Icon-512.png' %}{% endif %}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
 
   <meta property="twitter:card" content="summary_large_image">
   <meta property="twitter:title" content="{% if share_title %}{{ share_title }}{% else %}MalaTrade Marketplace{% endif %}">
-  <meta property="twitter:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MangoHub.{% endif %}">
-  <meta property="twitter:image" content="{% if share_image %}{{ share_image }}{% else %}{% static 'icons/Icon-512.png' %}{% endif %}">
+  <meta property="twitter:description" content="{% if share_desc %}{{ share_desc }}{% else %}Explore products, shops, lodges, events, and properties on MalaTrade.{% endif %}">
+  <meta property="twitter:image" content="{% if share_image %}{{ share_image }}{% else %}{{ request.scheme }}://{{ request.get_host }}{% static 'icons/Icon-512.png' %}{% endif %}">
 
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">

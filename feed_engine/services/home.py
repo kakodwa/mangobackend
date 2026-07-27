@@ -2,7 +2,8 @@ from ..services.base import BaseFeedService
 from ..services.cursor import Cursor
 from ..services.injector import FeedInjector
 
-from ..selectors.products import get_products, get_trending
+# 1. Update selector import
+from ..selectors.products import get_products, get_trending, get_random_category_products
 from ..selectors.shops import get_featured
 from ..selectors.events import get_upcoming
 from ..selectors.properties import get_properties
@@ -38,13 +39,14 @@ class HomeFeedService(BaseFeedService):
 
         next_cursor = Cursor.encode(products[-1].id)
 
+        serializer_context = {"request": request} if request else {}
+
         serialized_products = ProductSerializer(
             products,
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
 
-        # Correctly map individual products from serialized_products
         flat_products_stream = [
             self.format_item("product", item)
             for item in serialized_products
@@ -56,40 +58,59 @@ class HomeFeedService(BaseFeedService):
         trending_products = ProductSerializer(
             get_trending(),
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
+
+        # 2. Fetch and serialize the random category section
+        random_cat_data = get_random_category_products()
+        category_section = None
+
+        if random_cat_data["category"]:
+            serialized_category_products = ProductSerializer(
+                random_cat_data["products"],
+                many=True,
+                context=serializer_context
+            ).data
+
+            category_section = {
+                "title": random_cat_data["category"],
+                "category": random_cat_data["category"],
+                "products": serialized_category_products,
+            }
 
         featured_shops = ShopSerializer(
             get_featured(),
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
 
         upcoming_events = EventSerializer(
             get_upcoming(),
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
 
         featured_properties = PropertySerializer(
             get_properties(),
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
 
         featured_lodges = LodgeSerializer(
             get_lodges(),
             many=True,
-            context={"request": request} if request else {}
+            context=serializer_context
         ).data
 
         # -----------------------------
         # INJECT CONTENT
         # -----------------------------
+        # 3. Pass `category_section` into FeedInjector
         mixed_stream = FeedInjector.inject(
             items_list=flat_products_stream,
             injection_interval=12,
             products=trending_products,
+            category_section=category_section,  # <-- Added here
             shops=featured_shops,
             events=upcoming_events,
             properties=featured_properties,

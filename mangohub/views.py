@@ -37,8 +37,11 @@ def get_meta_from_url(request, full_path, path_token, model_class, title_field='
             img_url = ""
             if img_attr and hasattr(img_attr, 'url'):
                 img_url = request.build_absolute_uri(img_attr.url)
-            elif isinstance(img_attr, str):
-                img_url = img_attr
+            elif isinstance(img_attr, str) and img_attr:
+                if img_attr.startswith('http://') or img_attr.startswith('https://'):
+                    img_url = img_attr
+                else:
+                    img_url = request.build_absolute_uri(img_attr)
 
             return {
                 "share_title": f"{title} | MalaTrade",
@@ -52,11 +55,13 @@ def get_meta_from_url(request, full_path, path_token, model_class, title_field='
 
 
 def serve_flutter_web_app(request):
-    # Establish strict domain fallbacks
+    # Establish dynamic domain fallbacks based on current request host
+    default_image = request.build_absolute_uri('/static/icons/Icon-512.png')
+    
     context = {
         "share_title": "MalaTrade Marketplace",
-        "share_desc": "Explore products, shops, lodges, events, and properties.",
-        "share_image": "https://malatrade.com/static/icons/Icon-512.png"
+        "share_desc": "Explore products, shops, lodges, events, and properties on MalaTrade.",
+        "share_image": default_image
     }
     
     full_path = request.path 
@@ -105,8 +110,6 @@ def serve_flutter_web_app(request):
     return render(request, "index.html", context)
 
 
-
-
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -125,6 +128,6 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
         return queryset
 
-    # 🛠️ THE FIX: Pass the user explicitly into the save handler
+    # 🛠️ Pass the user explicitly into the save handler
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

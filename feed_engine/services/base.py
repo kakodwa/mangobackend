@@ -1,5 +1,5 @@
 class BaseFeedService:
-    PAGE_SIZE = 20
+    PAGE_SIZE = 24  
     HORIZONTAL_LIMIT = 10
 
     def format_item(self, item_type, obj):
