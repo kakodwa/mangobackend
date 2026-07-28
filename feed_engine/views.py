@@ -22,12 +22,14 @@ class UnifiedSearchView(APIView):
         
         district = request.GET.get('district', '').strip()
         category = request.GET.get('category', '').strip()
+        sub_category = request.GET.get('sub_category', '').strip() # Accept explicit sub_category query param
+        brand = request.GET.get('brand', '').strip()                 # Accept explicit brand query param
         listing_purpose = request.GET.get('listing_purpose', '').strip()
 
         combined_results = []
 
         # =========================================================
-        # 1. PRODUCTS FILTERING
+        # 1. PRODUCTS FILTERING (FIXED TO INCLUDE SUB_CATEGORY & BRAND)
         # =========================================================
         if target_type in ['all', 'product']:
             products = Product.objects.filter(
@@ -35,12 +37,32 @@ class UnifiedSearchView(APIView):
                 shop__status='approved'
             ).select_related('shop').prefetch_related('variants')
 
+            # ✅ 1. Search across name, description, sub_category, AND brand!
             if query:
-                products = products.filter(Q(name__icontains=query) | Q(description__icontains=query))
+                products = products.filter(
+                    Q(name__icontains=query) | 
+                    Q(description__icontains=query) |
+                    Q(sub_category__icontains=query) |
+                    Q(brand__icontains=query) |
+                    Q(category__icontains=query)
+                )
+
             if district: 
                 products = products.filter(shop__district__iexact=district)
+
+            # ✅ 2. Category matching
             if category and category.lower() != 'all': 
-                products = products.filter(category__icontains=category)
+                products = products.filter(
+                    Q(category__icontains=category) | Q(sub_category__icontains=category)
+                )
+
+            # ✅ 3. Specific Sub-Category filter matching
+            if sub_category:
+                products = products.filter(sub_category__icontains=sub_category)
+
+            # ✅ 4. Specific Brand filter matching
+            if brand:
+                products = products.filter(brand__icontains=brand)
             
             for item in products:
                 item.result_type = 'product'
@@ -102,7 +124,7 @@ class UnifiedSearchView(APIView):
 
             for item in properties:
                 item.result_type = 'property'
-                item.title = item.title  # ✅ FIXED: Was missing completely, leading to dropped/blank items
+                item.title = item.title
                 item.subtitle = item.description[:100] if item.description else ''
                 combined_results.append(item)
 
