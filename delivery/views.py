@@ -208,6 +208,13 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     def verify_delivery(self, request, pk=None):
         delivery = self.get_object()
 
+
+        print("User:", request.user)
+        print("Headers:", request.headers)
+        print("Request data:", request.data)
+        print("Delivery ID:", delivery.id)
+        print("Stored Code:", delivery.customer_delivery_code)
+
         if delivery.status == "delivered":
             return Response(
                 {"error": "Delivery already completed"},
