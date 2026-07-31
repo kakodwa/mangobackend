@@ -187,7 +187,7 @@ PAYCHANGU_SECRET_KEY = config('PAYCHANGU_SECRET_KEY', default='')
 GOOGLE_MAPS_API_KEY = config('GOOGLE_MAPS_API_KEY', default='')
 
 AUTH_USER_MODEL = 'users.User'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
 
 # Logging
 LOGGING = {
@@ -248,8 +248,6 @@ else:
 WHITENOISE_MANIFEST_STRICT = False
 
 
-
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 EMAIL_HOST = "malatrade.com"
@@ -258,10 +256,10 @@ EMAIL_PORT = 465
 EMAIL_USE_SSL = True
 EMAIL_USE_TLS = False
 
-EMAIL_HOST_USER = "no-reply@malatrade.com"
+EMAIL_HOST_USER = "support@malatrade.com"
 EMAIL_HOST_PASSWORD = os.getenv("MAIL_PASSWORD")
 
-DEFAULT_FROM_EMAIL = "no-reply@malatrade.com"
+DEFAULT_FROM_EMAIL = "MalaTrade Support <support@malatrade.com>"
 
 
 # Configure the token generator to use short numbers (ideal for SMS or fast email verification)

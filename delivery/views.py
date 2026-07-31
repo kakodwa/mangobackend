@@ -5,6 +5,8 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from utils.sms import send_sms
 from django.utils import timezone
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 from .models import Delivery
 from .serializers import (
@@ -175,21 +177,69 @@ class DeliveryViewSet(viewsets.ModelViewSet):
 
         delivery.status = new_status
 
-        # Generate customer verification code
+        # Generate customer verification code and notify customer when status switches to in_transit
         if (
             new_status == "in_transit"
             and not delivery.customer_delivery_code
         ):
-            delivery.customer_delivery_code = (
-                generate_customer_code()
-            )
+            delivery.customer_delivery_code = generate_customer_code()
+            delivery.save()
 
-            # TODO:
-            # Send SMS
-            # Send Push Notification
-            # Send WhatsApp Message
+            # Extract customer contact details (adjust attribute access based on your Order/User relationships)
+            customer = getattr(delivery.order, 'customer', None) or getattr(delivery, 'customer', None)
+            customer_email = getattr(customer, 'email', None) if customer else None
+            customer_phone = getattr(delivery, 'customer_phone', None) or (getattr(customer, 'phone_number', None) if customer else None)
+            customer_name = getattr(customer, 'first_name', None) or getattr(customer, 'username', 'Valued Customer')
+            order_id = str(delivery.order_id if hasattr(delivery, 'order_id') else delivery.id)
 
-        delivery.save()
+            # 1. Send SMS via utils.sms
+            if customer_phone:
+                sms_text = (
+                    f"MalaTrade Alert: Your package for order #{order_id} is in transit! "
+                    f"Your secret delivery code is {delivery.customer_delivery_code}. "
+                    f"Share this code with the seller/courier ONLY after inspecting your package to release funds."
+                )
+                try:
+                    send_sms(customer_phone, sms_text)
+                except Exception as e:
+                    # Log error in production so SMS failure doesn't block status update
+                    print(f"SMS dispatch failed: {e}")
+
+            # 2. Send HTML Email
+            if customer_email:
+                subject = f"MalaTrade: Your Order #{order_id} is In Transit"
+                context = {
+                    'customer_name': customer_name,
+                    'order_id': order_id,
+                    'customer_code': delivery.customer_delivery_code,
+                }
+                
+                html_message = render_to_string('emails/delivery_in_transit_email.html', context)
+                plain_message = (
+                    f"Hello {customer_name},\n\n"
+                    f"Your order #{order_id} is now in transit!\n"
+                    f"Your confidential delivery code is: {delivery.customer_delivery_code}\n\n"
+                    f"IMPORTANT:\n"
+                    f"- Keep this code secret until you receive and inspect your items.\n"
+                    f"- Sharing this code with your courier releases the escrow payment to the seller.\n"
+                    f"- If you receive the item but forget to provide the code, funds will automatically release after 2 days (48 hrs) if no dispute is opened.\n\n"
+                    f"Best regards,\nMalaTrade Support Team"
+                )
+
+                try:
+                    send_mail(
+                        subject=subject,
+                        message=plain_message,
+                        from_email="orders@malatrade.com",
+                        recipient_list=[customer_email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"Email dispatch failed: {e}")
+
+        else:
+            delivery.save()
 
         return Response({
             "message": "Status updated",
@@ -207,13 +257,6 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def verify_delivery(self, request, pk=None):
         delivery = self.get_object()
-
-
-        print("User:", request.user)
-        print("Headers:", request.headers)
-        print("Request data:", request.data)
-        print("Delivery ID:", delivery.id)
-        print("Stored Code:", delivery.customer_delivery_code)
 
         if delivery.status == "delivered":
             return Response(
@@ -244,12 +287,51 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # 1. Update Delivery Status
         delivery.status = "delivered"
         delivery.delivered_at = timezone.now()
         delivery.save()
 
+        # 2. Release Funds from Escrow
+        try:
+            # Pass delivery or delivery.order depending on your EscrowService signature
+            EscrowService.release_funds(delivery)
+        except Exception as e:
+            print(f"Escrow release failed for delivery {delivery.id}: {e}")
+
+        # 3. Send Notification Email to Seller
+        seller = delivery.seller  # Adjust attribute if seller is linked differently
+        if seller and seller.email:
+            seller_name = seller.first_name or seller.username
+            order_id = str(delivery.order_id if hasattr(delivery, 'order_id') else delivery.id)
+
+            subject = f"MalaTrade: Payment Released for Order #{order_id}"
+            context = {
+                'seller_name': seller_name,
+                'order_id': order_id,
+            }
+
+            html_message = render_to_string('emails/delivery_completed_seller_email.html', context)
+            plain_message = (
+                f"Hello {seller_name},\n\n"
+                f"Order #{order_id} has been delivered successfully!\n"
+                f"The customer verified receipt with their delivery code, and the escrow funds have been released to your account.\n\n"
+                f"Best regards,\nMalaTrade Support Team"
+            )
+
+            try:
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    from_email="orders@malatrade.com",
+                    recipient_list=[seller.email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+            except Exception as e:
+                print(f"Seller email notification failed: {e}")
 
         return Response({
-            "message": "Delivery completed successfully",
+            "message": "Delivery completed successfully and funds released from escrow",
             "status": delivery.status
         })

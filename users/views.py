@@ -2,6 +2,8 @@ from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from .models import User, Address
 from .serializers import UserSerializer, UserDetailSerializer, UserRegisterSerializer, AddressSerializer
 
@@ -14,8 +16,11 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.none() 
     serializer_class = UserSerializer
     
-    # 🛡️ Default fall-through access policy: completely deny unauthenticated requests
-    permission_classes = [permissions.IsAuthenticated]
+    # 🛡️ Dynamic permissions: allow unauthenticated access for registration
+    def get_permissions(self):
+        if self.action in ['create', 'register']:
+            return [permissions.AllowAny()]
+        return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
         """
@@ -26,45 +31,84 @@ class UserViewSet(viewsets.ModelViewSet):
         return User.objects.none()
 
     def get_serializer_class(self):
-        if self.action == 'create' or self.action == 'register':
+        if self.action in ['create', 'register']:
             return UserRegisterSerializer
-        elif self.action == 'retrieve' or self.action == 'me':
+        elif self.action in ['retrieve', 'me']:
             return UserDetailSerializer
         return UserSerializer
 
-    # 🛡️ Explicitly open ONLY the registration endpoint for public entry
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
-    def register(self, request):
-        # ❌ REMOVED: Raw print statements leaking text passwords into environment stdout logs
-        serializer = UserRegisterSerializer(data=request.data)
+    def _send_welcome_email(self, user):
+        """
+        Helper method to render and send the HTML welcome email upon account creation.
+        """
+        if not user.email:
+            return
 
+        user_name = user.first_name or user.username
+        subject = "Welcome to MalaTrade!"
+        
+        context = {
+            'user_name': user_name,
+        }
+
+        # Render HTML template
+        html_message = render_to_string('emails/welcome_email.html', context)
+
+        # Plain text fallback
+        plain_message = (
+            f"Hello {user_name},\n\n"
+            f"Welcome to MalaTrade! Thank you for creating an account.\n"
+            f"Your account is ready to go.\n\n"
+            f"Best regards,\nMalaTrade Support Team"
+        )
+
+        send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email="support@malatrade.com",
+            recipient_list=[user.email],
+            html_message=html_message,
+            fail_silently=False,
+        )
+
+    # Standard ModelViewSet creation override
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            
+            # 📧 Trigger Welcome Email
+            self._send_welcome_email(user)
 
             refresh = RefreshToken.for_user(user)
             return Response({
-                'user': UserSerializer(user).data,
+                'user': UserSerializer(user, context=self.get_serializer_context()).data,
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }, status=status.HTTP_201_CREATED)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
+    # 🛡️ Custom explicit registration endpoint
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    def register(self, request):
+        return self.create(request)
+
+    @action(detail=False, methods=['get'])
     def me(self, request):
-        serializer = UserDetailSerializer(request.user)
+        serializer = self.get_serializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['put', 'patch'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['put', 'patch'])
     def update_profile(self, request):
         user = request.user
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        serializer = self.get_serializer(user, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(detail=False, methods=['post', 'get'], permission_classes=[permissions.IsAuthenticated])
+    @action(detail=False, methods=['get', 'post', 'put', 'patch'])
     def address(self, request):
         user = request.user
         if request.method == 'GET':
@@ -75,7 +119,7 @@ class UserViewSet(viewsets.ModelViewSet):
             except Address.DoesNotExist:
                 return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
         
-        elif request.method == 'POST':
+        elif request.method in ['POST', 'PUT', 'PATCH']:
             address, created = Address.objects.get_or_create(user=user)
             serializer = AddressSerializer(address, data=request.data, partial=True)
             if serializer.is_valid():

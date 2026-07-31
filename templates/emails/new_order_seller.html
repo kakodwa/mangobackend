@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>New Order Received</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: Arial, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f7; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" style="max-width: 550px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                    <tr>
+                        <td style="background-color: #16a34a; height: 6px;"></td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding: 25px 40px 15px 40px;">
+                            <h2 style="margin: 0; font-size: 28px; font-weight: 800;">
+                                <span style="color: #ff6b00;">MALA</span><span style="color: #16a34a;">TRADE</span>
+                            </h2>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #16a34a; padding: 20px; text-align: center;">
+                            <h1 style="color: #ffffff; font-size: 20px; margin: 0; text-transform: uppercase;">
+                                New Order Received! 📦
+                            </h1>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 30px; color: #333333; line-height: 1.6;">
+                            <p style="margin-top: 0;">Hello <strong>{{ seller_name }}</strong>,</p>
+                            <p>You have received a new order <strong>#{{ order_id }}</strong> on <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span>!</p>
+
+                            <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; padding: 15px; margin: 20px 0;">
+                                <p style="margin: 0; font-size: 14px; color: #16a34a; font-weight: 700;">Order Number: #{{ order_id }}</p>
+                            </div>
+
+                            <p style="font-size: 13px; color: #666666;">Please prepare the items for delivery. Payment is safely held in escrow and will be released to your wallet upon customer verification.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 20px; text-align: center; color: #888888; font-size: 12px; border-top: 1px solid #eeeeee;">
+                            The <span style="color: #ff6b00;">MALA</span><span style="color: #16a34a;">TRADE</span> Support Team
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
