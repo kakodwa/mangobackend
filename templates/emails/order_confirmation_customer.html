@@ -8,7 +8,7 @@
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f7; padding: 20px 0;">
         <tr>
             <td align="center">
-                <table role="presentation" width="100%" style="max-width: 550px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
                     <tr>
                         <td style="background-color: #16a34a; height: 6px;"></td>
                     </tr>
@@ -22,7 +22,7 @@
                     <tr>
                         <td style="background-color: #ff6b00; padding: 20px; text-align: center;">
                             <h1 style="color: #ffffff; font-size: 20px; margin: 0; text-transform: uppercase;">
-                                Order Placed Successfully! 🎉
+                                Order Placed Successfully!
                             </h1>
                         </td>
                     </tr>
@@ -35,7 +35,28 @@
                                 <p style="margin: 0; font-size: 14px; color: #ff6b00; font-weight: 700;">Order ID: #{{ order_id }}</p>
                             </div>
 
-                            <p style="font-size: 13px; color: #666666;">Funds are currently held safely in escrow. They will only be released to the seller once you receive and verify your delivery using your secure code.</p>
+                            <!-- Delivery Code & Escrow Explanation Box -->
+                            <div style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 18px; margin-bottom: 20px;">
+                                <h4 style="margin: 0 0 10px 0; color: #166534; font-size: 14px; text-transform: uppercase;">🔐 Important: Your Delivery Verification Code</h4>
+                                
+                                <ul style="margin: 0; padding-left: 20px; color: #15803d; font-size: 13px; line-height: 1.6;">
+                                    <li style="margin-bottom: 8px;">
+                                        <strong>Escrow Protection:</strong> Your payment is held completely safe in escrow. Funds are only released to the seller after your items arrive and you provide your unique <strong>Delivery Code</strong> to the courier/rider.
+                                    </li>
+                                    <li style="margin-bottom: 8px;">
+                                        <strong>When the Process Starts:</strong> The delivery process starts immediately <strong>upon payment completion</strong>. Once the seller dispatches your item, your Delivery Code will be generated.
+                                    </li>
+                                    <li>
+                                        <strong>Where to Access Your Code:</strong> We will email you your Delivery Code as soon as dispatch begins. You can also view it inside the app by going to:
+                                        <div style="margin-top: 6px; font-weight: bold; color: #166534; background: #dcfce7; padding: 8px; border-radius: 4px; font-size: 12px;">
+                                            Dashboard &rarr; Activity &rarr; Orders &rarr; Find Order #{{ order_id }} &rarr; Tap to Expand
+                                        </div>
+                                        <em style="display: block; margin-top: 4px; font-size: 11px; color: #166534;">*Note: If the seller has not started the delivery process yet, the code will not appear on your screen.</em>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <p style="font-size: 13px; color: #666666;">You can track your order status live from your customer dashboard at any time.</p>
                         </td>
                     </tr>
                     <tr>

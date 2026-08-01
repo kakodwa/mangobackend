@@ -8,7 +8,7 @@
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f5f7; padding: 20px 0;">
         <tr>
             <td align="center">
-                <table role="presentation" width="100%" style="max-width: 550px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+                <table role="presentation" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
                     <tr>
                         <td style="background-color: #16a34a; height: 6px;"></td>
                     </tr>
@@ -29,14 +29,28 @@
                     <tr>
                         <td style="padding: 30px; color: #333333; line-height: 1.6;">
                             <p style="margin-top: 0;">Hello <strong>{{ seller_name }}</strong>,</p>
-                            <p>Customer payment of <strong>MWK {{ amount }}</strong> for Order <strong>#{{ order_id }}</strong> has been verified and safely deposited into <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> Escrow.</p>
+                            <p>Great news! Customer payment of <strong>MWK {{ amount }}</strong> for Order <strong>#{{ order_id }}</strong> has been verified and safely deposited into <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> Escrow.</p>
 
                             <div style="background-color: #fff7f2; border-left: 4px solid #ff6b00; padding: 15px; margin: 20px 0; border-radius: 4px;">
                                 <p style="margin: 0; font-size: 14px; color: #ff6b00; font-weight: 700;">Order #: {{ order_id }}</p>
-                                <p style="margin: 4px 0 0 0; font-size: 14px; color: #333333;">Escrow Amount: MWK {{ amount }}</p>
+                                <p style="margin: 4px 0 0 0; font-size: 14px; color: #333333;">Escrow Amount: <strong>MWK {{ amount }}</strong></p>
                             </div>
 
-                            <p style="font-size: 13px; color: #666666;">Please proceed to assign a courier or prepare the items for delivery.</p>
+                            <!-- Escrow Release Terms Box -->
+                            <div style="background-color: #f0fdf4; border: 1px solid #86efac; border-radius: 6px; padding: 18px; margin-bottom: 20px;">
+                                <h4 style="margin: 0 0 10px 0; color: #166534; font-size: 14px; text-transform: uppercase;">🛡️ Escrow Payout Conditions:</h4>
+                                
+                                <ul style="margin: 0; padding-left: 20px; color: #15803d; font-size: 13px; line-height: 1.6;">
+                                    <li style="margin-bottom: 8px;">
+                                        <strong>Instant Release via Delivery Code:</strong> The funds will be released to your wallet immediately when the customer receives their order and shares their <strong>Delivery Code</strong> with you or your assigned courier/rider.
+                                    </li>
+                                    <li>
+                                        <strong>Automatic 2-Day Payout:</strong> If the item has been delivered and the customer does not manually enter/share their code, the system will <strong>automatically release the money to your wallet after 2 days</strong>.
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <p style="font-size: 13px; color: #666666;">Please proceed to your dashboard to assign a courier and dispatch the order to the customer.</p>
                         </td>
                     </tr>
                     <tr>

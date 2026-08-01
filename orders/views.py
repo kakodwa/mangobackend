@@ -9,6 +9,9 @@ from .serializers import OrderSerializer, OrderCreateSerializer
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
+import logging
+logger = logging.getLogger(__name__)
+
 
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
@@ -31,11 +34,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     # HELPER: Send Confirmation Email to Customer
     # ==========================================
     def _send_customer_order_email(self, order):
-        customer = order.customer
-        if not customer or not customer.email:
+        customer = getattr(order, 'customer', None)
+        if not customer or not getattr(customer, 'email', None):
+            logger.warning(f"No valid customer email found for Order #{order.id}")
             return
 
-        customer_name = customer.first_name or customer.username
+        customer_name = getattr(customer, 'first_name', '') or customer.username
         subject = f"MalaTrade: Order Confirmation #{order.id}"
 
         context = {
@@ -44,11 +48,16 @@ class OrderViewSet(viewsets.ModelViewSet):
             'total_amount': getattr(order, 'total_amount', 0),
         }
 
-        html_message = render_to_string('emails/order_confirmation_customer.html', context)
+        try:
+            html_message = render_to_string('emails/order_confirmation_customer.html', context)
+        except Exception as e:
+            logger.warning(f"Failed rendering customer HTML email template: {e}")
+            html_message = None
+
         plain_message = (
             f"Hello {customer_name},\n\n"
             f"Thank you for your purchase on MalaTrade! Your order #{order.id} has been placed successfully.\n"
-            f"Total Amount: ${order.total_amount if hasattr(order, 'total_amount') else ''}\n\n"
+            f"Total Amount: MWK {getattr(order, 'total_amount', 0)}\n\n"
             f"We will notify you as soon as your items are prepared and in transit.\n\n"
             f"Best regards,\nMalaTrade Support Team"
         )
@@ -62,53 +71,103 @@ class OrderViewSet(viewsets.ModelViewSet):
                 html_message=html_message,
                 fail_silently=False,
             )
+            logger.info(f"Customer confirmation email sent to {customer.email} for Order #{order.id}")
         except Exception as e:
-            print(f"Failed to send customer order email: {e}")
+            logger.error(f"Failed to send customer order email for Order #{order.id}: {e}")
 
     # ==========================================
-    # HELPER: Send New Order Alert Email to Seller
+    # HELPER: Send New Order Alert Email to All Related Sellers / Shops
     # ==========================================
     def _send_seller_new_order_email(self, order):
-        # Extract seller from order (or order items / shop)
-        seller = getattr(order, 'seller', None) or getattr(order, 'shop_owner', None)
-        
-        # If order items have distinct sellers, extract from items:
-        if not seller and hasattr(order, 'items') and order.items.exists():
-            first_item = order.items.first()
-            seller = getattr(first_item.product, 'seller', None)
+        seller_emails = set()
 
-        if not seller or not seller.email:
+        # Strategy 1: Check Order Items -> Product -> Shop -> Owner / Email
+        if hasattr(order, 'items') and order.items.exists():
+            for item in order.items.all():
+                product = getattr(item, 'product', None)
+                if product:
+                    shop = getattr(product, 'shop', None) or getattr(product, 'store', None)
+                    if shop:
+                        owner = getattr(shop, 'owner', None)
+                        if owner and getattr(owner, 'email', None):
+                            seller_emails.add((owner.email, getattr(owner, 'first_name', '') or owner.username))
+                        elif getattr(shop, 'email', None):
+                            seller_emails.add((shop.email, shop.name))
+                        continue
+
+                    # Direct seller attached to product
+                    direct_seller = (
+                        getattr(product, 'seller', None) or 
+                        getattr(product, 'user', None) or 
+                        getattr(product, 'vendor', None)
+                    )
+                    if direct_seller and getattr(direct_seller, 'email', None):
+                        seller_emails.add((
+                            direct_seller.email, 
+                            getattr(direct_seller, 'first_name', '') or direct_seller.username
+                        ))
+
+        # Strategy 2: Check Sub-Orders (seller_orders)
+        if not seller_emails and hasattr(order, 'seller_orders') and order.seller_orders.exists():
+            for seller_order in order.seller_orders.all():
+                shop = getattr(seller_order, 'shop', None) or getattr(seller_order, 'store', None)
+                if shop:
+                    owner = getattr(shop, 'owner', None)
+                    if owner and getattr(owner, 'email', None):
+                        seller_emails.add((owner.email, getattr(owner, 'first_name', '') or owner.username))
+                    elif getattr(shop, 'email', None):
+                        seller_emails.add((shop.email, shop.name))
+
+        # Strategy 3: Check Direct Shop on Order model
+        if not seller_emails:
+            order_shop = getattr(order, 'shop', None)
+            if order_shop:
+                owner = getattr(order_shop, 'owner', None)
+                if owner and getattr(owner, 'email', None):
+                    seller_emails.add((owner.email, getattr(owner, 'first_name', '') or owner.username))
+                elif getattr(order_shop, 'email', None):
+                    seller_emails.add((order_shop.email, order_shop.name))
+
+        if not seller_emails:
+            logger.warning(f"No sellers or shop owners identified to receive order email alert for Order #{order.id}")
             return
 
-        seller_name = seller.first_name or seller.username
-        subject = f"MalaTrade: New Order Received #{order.id}"
+        # Send email alert to every unique seller/shop email found
+        for email, name in seller_emails:
+            subject = f"MalaTrade: New Order Received #{order.id}"
 
-        context = {
-            'seller_name': seller_name,
-            'order_id': order.id,
-            'total_amount': getattr(order, 'total_amount', 0),
-        }
+            context = {
+                'seller_name': name,
+                'order_id': order.id,
+                'total_amount': getattr(order, 'total_amount', 0),
+            }
 
-        html_message = render_to_string('emails/new_order_seller.html', context)
-        plain_message = (
-            f"Hello {seller_name},\n\n"
-            f"You have received a new order #{order.id} on MalaTrade!\n"
-            f"Total Order Value: ${order.total_amount if hasattr(order, 'total_amount') else ''}\n\n"
-            f"Please log in to your dashboard to process and prepare this order for pickup.\n\n"
-            f"Best regards,\nMalaTrade Team"
-        )
+            try:
+                html_message = render_to_string('emails/new_order_seller.html', context)
+            except Exception as e:
+                logger.warning(f"Failed rendering seller HTML email template: {e}")
+                html_message = None
 
-        try:
-            send_mail(
-                subject=subject,
-                message=plain_message,
-                from_email="orders@malatrade.com",
-                recipient_list=[seller.email],
-                html_message=html_message,
-                fail_silently=False,
+            plain_message = (
+                f"Hello {name},\n\n"
+                f"You have received a new order #{order.id} on MalaTrade!\n"
+                f"Total Order Value: MWK {getattr(order, 'total_amount', 0)}\n\n"
+                f"Please log in to your dashboard to process and prepare this order for pickup.\n\n"
+                f"Best regards,\nMalaTrade Team"
             )
-        except Exception as e:
-            print(f"Failed to send seller new order email: {e}")
+
+            try:
+                send_mail(
+                    subject=subject,
+                    message=plain_message,
+                    from_email="orders@malatrade.com",
+                    recipient_list=[email],
+                    html_message=html_message,
+                    fail_silently=False,
+                )
+                logger.info(f"Seller alert email sent to {email} for Order #{order.id}")
+            except Exception as e:
+                logger.error(f"Failed to send seller email to {email} for Order #{order.id}: {e}")
 
     # ==========================================
     # CREATE ORDER ACTION
@@ -120,11 +179,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         order = serializer.save()
 
-        # 📧 Trigger Emails to Customer & Seller upon successful order creation
+        # 🔑 Force Django to re-read items created within transaction
+        order.refresh_from_db()
+
+        # 📧 Trigger Emails to Customer & Sellers upon successful order creation
         self._send_customer_order_email(order)
         self._send_seller_new_order_email(order)
 

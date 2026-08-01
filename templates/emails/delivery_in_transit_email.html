@@ -26,11 +26,11 @@
                         </td>
                     </tr>
 
-                    <!-- Hero Banner (Dominant Orange) -->
+                    <!-- Hero Banner -->
                     <tr>
                         <td style="background-color: #ff6b00; padding: 25px 40px; text-align: center;">
-                            <h1 style="color: #ffffff; font-size: 22px; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                                Your Package is On Its Way! 🚚
+                            <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Your Package is On Its Way!
                             </h1>
                         </td>
                     </tr>
@@ -40,39 +40,39 @@
                         <td style="padding: 32px 40px 20px 40px; color: #333333; line-height: 1.6; font-size: 15px;">
                             <p style="margin-top: 0;">Hello <strong>{{ customer_name }}</strong>,</p>
                             <p style="color: #555555;">
-                                Great news! Your order <strong>#{{ order_id }}</strong> is currently <strong>in transit</strong> and expected to arrive soon.
+                                Great news! Your order <strong>#{{ order_id }}</strong> from <strong>{{ shop_name }}</strong> is currently in transit and expected to arrive soon.
                             </p>
 
-                            <!-- OTP / Security Code Box -->
-                            <div style="background-color: #fff7f2; border: 1.5px dashed #ff6b00; border-left: 4px solid #16a34a; border-radius: 6px; padding: 20px; text-align: center; margin: 24px 0;">
-                                <span style="display: block; font-size: 12px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
-                                    🔒 Confidential Verification PIN
+                            <!-- Verification Code Box (Cleaned Styling) -->
+                            <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 20px; text-align: center; margin: 24px 0;">
+                                <span style="display: block; font-size: 12px; font-weight: 700; color: #4b5563; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
+                                    Delivery Verification Code
                                 </span>
                                 <span style="font-size: 34px; font-weight: 800; letter-spacing: 6px; color: #ff6b00; font-family: 'Courier New', Courier, monospace;">
                                     {{ customer_code }}
                                 </span>
                             </div>
 
-                            <!-- Escrow & Security Notice Box -->
+                            <!-- Delivery Notice Box (Sanitized Terms) -->
                             <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 18px; margin-bottom: 24px;">
-                                <h4 style="margin: 0 0 8px 0; color: #16a34a; font-size: 14px; text-transform: uppercase;">
-                                    ⚠️ Important Delivery Instructions:
+                                <h4 style="margin: 0 0 8px 0; color: #16a34a; font-size: 14px;">
+                                    Important Instructions:
                                 </h4>
                                 <ul style="margin: 0; padding-left: 18px; color: #374151; font-size: 13px; line-height: 1.5;">
                                     <li style="margin-bottom: 6px;">
-                                        <strong>Keep this code secret:</strong> Only share this code with the courier/rider <strong>AFTER</strong> you have received and inspected your package.
+                                        <strong>Provide code upon arrival:</strong> Share this verification code with your delivery driver after receiving and checking your item.
                                     </li>
                                     <li style="margin-bottom: 6px;">
-                                        <strong>Escrow Protection:</strong> Sharing this code authorizes <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> to release the payment from escrow directly to the seller.
+                                        <strong>Order Confirmation:</strong> Verifying your code completes your delivery step on <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span>.
                                     </li>
                                     <li>
-                                        <strong>Automatic Release Policy:</strong> If you accept your parcel without sharing the code and raise no disputes within <strong>2 days (48 hours)</strong>, escrow funds will be released to the seller automatically.
+                                        <strong>Support:</strong> If you face any delay or package issues, please reach out to our support team within 48 hours.
                                     </li>
                                 </ul>
                             </div>
 
                             <p style="font-size: 13px; color: #777777; margin-bottom: 0;">
-                                If you have any issues or have not received your parcel, please contact support immediately.
+                                Need help? Contact MalaTrade support directly through your dashboard.
                             </p>
                         </td>
                     </tr>

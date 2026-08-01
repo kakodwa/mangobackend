@@ -1,13 +1,17 @@
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Order, OrderItem, SellerOrder
 from decimal import Decimal, ROUND_HALF_UP
 from products.serializers import ProductSerializer
 from delivery.serializers import DeliverySerializer
-from orders.models import SellerOrder
 from payments.models import EscrowWallet
+from shops.models import Shop
 
 
 class SellerOrderSerializer(serializers.ModelSerializer):
+
+    shop_id = serializers.SerializerMethodField()
+    shop_name = serializers.SerializerMethodField()
+    shop_logo = serializers.SerializerMethodField()
 
     customer_paid = serializers.SerializerMethodField()
     escrow_status = serializers.SerializerMethodField()
@@ -15,7 +19,7 @@ class SellerOrderSerializer(serializers.ModelSerializer):
     seller_amount = serializers.SerializerMethodField()
     commission = serializers.SerializerMethodField()
     delivery_status = serializers.SerializerMethodField()
-    items = serializers.SerializerMethodField()   # ✅ ADD THIS
+    items = serializers.SerializerMethodField()
 
     class Meta:
         model = SellerOrder
@@ -23,6 +27,9 @@ class SellerOrderSerializer(serializers.ModelSerializer):
             "id",
             "order",
             "seller",
+            "shop_id",        # 🔑 Explicit shop ID for Flutter deep-linking
+            "shop_name",      # 🔑 Storefront name shown in customer interface
+            "shop_logo",      # 🔑 Store avatar URL
             "subtotal",
             "customer_paid",
             "escrow_status",
@@ -30,11 +37,47 @@ class SellerOrderSerializer(serializers.ModelSerializer):
             "seller_amount",
             "commission",
             "delivery_status",
-            "items",   # ✅ IMPORTANT
+            "items",
             "created_at",
         ]
 
+    # =========================================================================
+    # ROBUST SHOP RESOLUTION HELPERS
+    # =========================================================================
+    def _get_seller_shop(self, obj):
+        """
+        Safely locates the Shop instance for the seller.
+        Tries direct model access first, then falls back to a query by owner.
+        """
+        try:
+            if hasattr(obj.seller, 'shop'):
+                return obj.seller.shop
+            return Shop.objects.filter(owner=obj.seller).first()
+        except Exception:
+            return None
 
+    def get_shop_id(self, obj):
+        shop = self._get_seller_shop(obj)
+        return shop.id if shop else None
+
+    def get_shop_name(self, obj):
+        shop = self._get_seller_shop(obj)
+        if shop and getattr(shop, 'name', None):
+            return shop.name
+        return "Official Store"
+
+    def get_shop_logo(self, obj):
+        shop = self._get_seller_shop(obj)
+        if shop and getattr(shop, 'logo', None) and shop.logo:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(shop.logo.url)
+            return shop.logo.url
+        return None
+
+    # =========================================================================
+    # EXISTING BUSINESS LOGIC RESOLVERS
+    # =========================================================================
     def get_items(self, obj):
         items = obj.order.items.filter(product__shop__owner=obj.seller)
 
@@ -43,7 +86,6 @@ class SellerOrderSerializer(serializers.ModelSerializer):
                 "id": i.id,
                 "product_name": i.product.name,
                 "product_image": i.product.image.url if i.product.image else "",
-                # ✅ Add variant details so sellers see exactly which options were chosen
                 "variant_attributes": i.product_variant.attributes if i.product_variant else {},
                 "quantity": i.quantity,
                 "total_price": i.total_price,
@@ -55,11 +97,11 @@ class SellerOrderSerializer(serializers.ModelSerializer):
         return obj.order.status != "pending"
 
     def get_escrow_status(self, obj):
-        escrow = EscrowWallet.objects.filter(payment__order=obj.order,beneficiary=obj.seller).first()
+        escrow = EscrowWallet.objects.filter(payment__order=obj.order, beneficiary=obj.seller).first()
         return escrow.status if escrow else None
 
     def get_escrow_amount(self, obj):
-        escrow = EscrowWallet.objects.filter(payment__order=obj.order,beneficiary=obj.seller).first()
+        escrow = EscrowWallet.objects.filter(payment__order=obj.order, beneficiary=obj.seller).first()
         return escrow.amount if escrow else Decimal("0.00")
 
     def get_commission(self, obj):
@@ -82,14 +124,13 @@ def round6(value):
     )
 
 
-# =========================
+# =========================================================================
 # ORDER ITEM SERIALIZER
-# =========================
+# =========================================================================
 class OrderItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer(read_only=True)
     product_id = serializers.IntegerField(write_only=True)
     
-    # ✅ Add variant support (Assuming you have a ProductVariantSerializer)
     product_variant = serializers.SerializerMethodField()
     product_variant_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
 
@@ -99,8 +140,8 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'id',
             'product',
             'product_id',
-            'product_variant',       # ✅ Read variant properties
-            'product_variant_id',    # ✅ Write variant data
+            'product_variant',
+            'product_variant_id',
             'quantity',
             'unit_price',
             'total_price'
@@ -109,16 +150,16 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def get_product_variant(self, obj):
         if obj.product_variant:
-            # Return raw string attributes map to the front end if serializer isn't ready
             return obj.product_variant.attributes 
         return None
 
 
-
+# =========================================================================
+# PARENT ORDER SERIALIZER
+# =========================================================================
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
-
-    seller_orders = SellerOrderSerializer(many=True, read_only=True)  # ✅ ADD THIS
+    seller_orders = SellerOrderSerializer(many=True, read_only=True)
 
     customer_name = serializers.CharField(source='customer.get_full_name', read_only=True)
     customer_id = serializers.IntegerField(source='customer.id', read_only=True)
@@ -144,14 +185,14 @@ class OrderSerializer(serializers.ModelSerializer):
             'delivery',
 
             'items',
-            'seller_orders',   # ✅ MUST BE HERE
+            'seller_orders',
             'created_at'
         ]
 
 
-# =========================
+# =========================================================================
 # ORDER CREATE SERIALIZER
-# =========================
+# =========================================================================
 class OrderCreateSerializer(serializers.Serializer):
     items = OrderItemSerializer(many=True)
     delivery_address = serializers.CharField()
@@ -161,17 +202,16 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         from .models import Order, OrderItem
-        from products.models import Product, ProductVariant  # Ensure ProductVariant is imported
+        from products.models import Product, ProductVariant
         from decimal import Decimal
 
         user = self.context['request'].user
-        items_data = self.initial_data.get('items', []) # 👈 Use initial_data to capture raw JSON objects cleanly
+        items_data = self.initial_data.get('items', [])
 
         lat = round6(validated_data.pop('lat', None))
         lng = round6(validated_data.pop('lng', None))
         phone = validated_data.pop('delivery_phone', None)
 
-        # Create base order instance
         order = Order.objects.create(
             order_number=f"ORD-{user.id}-{Order.objects.count() + 1}",
             customer=user,
@@ -185,7 +225,6 @@ class OrderCreateSerializer(serializers.Serializer):
 
         subtotal = Decimal('0.00')
 
-        # Create individual items
         for item in items_data:
             product = Product.objects.get(id=item['product_id'])
             qty = int(item['quantity'])
@@ -195,12 +234,10 @@ class OrderCreateSerializer(serializers.Serializer):
                     f"You cannot order your own product: {product.name}"
                 )
 
-            # ✅ FIX: Match the exact option attributes map back to its DB variant row entry instance
             variant_attributes = item.get('variant_attributes')
             variant = None
             
             if variant_attributes:
-                # Query your product variant table row rows to find the match containing these precise attributes
                 variant = ProductVariant.objects.filter(
                     product=product,
                     attributes=variant_attributes
@@ -213,13 +250,12 @@ class OrderCreateSerializer(serializers.Serializer):
             OrderItem.objects.create(
                 order=order,
                 product=product,
-                product_variant=variant,  # ✅ This will now save the variant accurately to the database!
+                product_variant=variant,
                 quantity=qty,
                 unit_price=unit_price,
                 total_price=total_price
             )
 
-        # Save totals
         order.subtotal = subtotal
         order.total_amount = subtotal
         order.save()

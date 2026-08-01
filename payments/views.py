@@ -294,12 +294,13 @@ class PaymentViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 # ==========================================
-# EMAIL DISPATCH HELPER
+# MULTI-VENDOR EMAIL DISPATCH HELPER
 # ==========================================
 def _send_payment_success_emails(payment):
     """
-    Sends payment receipt to Customer and notification to Seller/Merchant 
-    once payment is verified as completed.
+    Sends payment receipt to Customer and notification to ALL involved 
+    Sellers/Merchants once payment is verified as completed.
+    Supports single-vendor & multi-vendor order architectures.
     """
     customer = payment.user
     customer_email = getattr(customer, 'email', None)
@@ -308,6 +309,7 @@ def _send_payment_success_emails(payment):
     amount = payment.amount
     purpose = payment.purpose
     reference = payment.payment_reference
+    from_email = getattr(settings, 'DEFAULT_FROM_EMAIL', 'payments@malatrade.com')
 
     # 1. SEND PAYMENT RECEIPT TO CUSTOMER
     if customer_email:
@@ -319,65 +321,108 @@ def _send_payment_success_emails(payment):
             'reference': reference,
         }
         
-        html_message = render_to_string('emails/payment_success_customer.html', context)
-        plain_message = (
-            f"Hello {customer_name},\n\n"
-            f"Your payment of MWK {amount} for '{purpose}' on MalaTrade has been received successfully!\n"
-            f"Reference Code: {reference}\n\n"
-            f"Best regards,\nMalaTrade Support Team"
-        )
-
         try:
+            html_message = render_to_string('emails/payment_success_customer.html', context)
+            plain_message = (
+                f"Hello {customer_name},\n\n"
+                f"Your payment of MWK {amount} for '{purpose}' on MalaTrade has been received successfully!\n"
+                f"Reference Code: {reference}\n\n"
+                f"Best regards,\nMalaTrade Support Team"
+            )
+
             send_mail(
                 subject=subject,
                 message=plain_message,
-                from_email="payments@malatrade.com",
+                from_email=from_email,
                 recipient_list=[customer_email],
                 html_message=html_message,
                 fail_silently=False,
             )
+            print(f"[Payment Email] Customer receipt sent to {customer_email}")
         except Exception as e:
-            print(f"[Payment Email] Customer email failed: {e}")
+            print(f"[Payment Email ERROR] Customer receipt failed: {e}")
 
-    # 2. SEND ALERT TO SELLER / MERCHANT (If Order Payment)
-    if purpose in ["order_payment", "order"]:
+    # 2. MULTI-VENDOR ALERT TO ALL INVOLVED SELLERS
+    normalized_purpose = str(purpose).lower().strip()
+    if any(keyword in normalized_purpose for keyword in ["order", "product", "purchase", "item"]):
         order = getattr(payment, 'order', None)
-        seller = None
         
         if order:
-            seller = getattr(order, 'seller', None) or getattr(order, 'shop_owner', None)
-            if not seller and hasattr(order, 'items') and order.items.exists():
-                first_item = order.items.first()
-                seller = getattr(first_item.product, 'seller', None)
+            seller_items_map = defaultdict(list)
 
-        if seller and getattr(seller, 'email', None):
-            seller_name = getattr(seller, 'first_name', None) or getattr(seller, 'username', 'Merchant')
-            seller_subject = f"MalaTrade: Payment Secured in Escrow for Order #{order.id}"
-            seller_context = {
-                'seller_name': seller_name,
-                'order_id': order.id,
-                'amount': amount,
-            }
+            # Strategy A: Multi-vendor resolution via OrderItems -> Product -> Seller/Shop Owner
+            if hasattr(order, 'items') and order.items.exists():
+                for item in order.items.all():
+                    product = getattr(item, 'product', None)
+                    if not product:
+                        continue
+                    
+                    item_seller = (
+                        getattr(product, 'seller', None) or 
+                        getattr(product, 'user', None) or 
+                        getattr(getattr(product, 'shop', None), 'owner', None)
+                    )
 
-            seller_html = render_to_string('emails/payment_received_seller.html', seller_context)
-            seller_plain = (
-                f"Hello {seller_name},\n\n"
-                f"Payment of MWK {amount} for Order #{order.id} has been secured in escrow.\n"
-                f"Please prepare the package for delivery.\n\n"
-                f"Best regards,\nMalaTrade Support Team"
-            )
+                    if item_seller and getattr(item_seller, 'email', None):
+                        seller_items_map[item_seller].append(item)
 
-            try:
-                send_mail(
-                    subject=seller_subject,
-                    message=seller_plain,
-                    from_email="payments@malatrade.com",
-                    recipient_list=[seller.email],
-                    html_message=seller_html,
-                    fail_silently=False,
+            # Strategy B: Fallback to Direct Order Seller/Shop Owner if items resolution didn't yield sellers
+            if not seller_items_map:
+                direct_seller = (
+                    getattr(order, 'seller', None) or 
+                    getattr(order, 'shop_owner', None) or 
+                    getattr(getattr(order, 'shop', None), 'owner', None)
                 )
-            except Exception as e:
-                print(f"[Payment Email] Seller email failed: {e}")
+                if direct_seller and getattr(direct_seller, 'email', None):
+                    all_items = list(order.items.all()) if hasattr(order, 'items') else []
+                    seller_items_map[direct_seller] = all_items
+
+            # Dispatch personalized emails to each resolved vendor
+            if seller_items_map:
+                for seller, items in seller_items_map.items():
+                    seller_name = getattr(seller, 'first_name', None) or getattr(seller, 'username', 'Merchant')
+                    seller_email = seller.email
+                    seller_subject = f"MalaTrade: Payment Secured in Escrow for Order #{order.id}"
+                    
+                    # Calculate subtotal for vendor's items if price & quantity attributes exist
+                    seller_subtotal = sum(
+                        getattr(item, 'price', 0) * getattr(item, 'quantity', 1) 
+                        for item in items
+                    )
+                    
+                    seller_context = {
+                        'seller_name': seller_name,
+                        'order_id': order.id,
+                        'amount': seller_subtotal if seller_subtotal > 0 else amount,
+                        'items': items,
+                    }
+
+                    try:
+                        seller_html = render_to_string('emails/payment_received_seller.html', seller_context)
+                        seller_plain = (
+                            f"Hello {seller_name},\n\n"
+                            f"Payment for Order #{order.id} has been secured in escrow.\n"
+                            f"Please proceed to your dashboard to assign a courier and dispatch the order.\n\n"
+                            f"Best regards,\nMalaTrade Support Team"
+                        )
+
+                        send_mail(
+                            subject=seller_subject,
+                            message=seller_plain,
+                            from_email=from_email,
+                            recipient_list=[seller_email],
+                            html_message=seller_html,
+                            fail_silently=False,
+                        )
+                        print(f"[Payment Email] Seller notification sent to {seller_email} for Order #{order.id}")
+                    except Exception as e:
+                        print(f"[Payment Email ERROR] Failed sending to seller {seller_email}: {e}")
+            else:
+                print(f"[Payment Email WARNING] Could not resolve any vendor/seller email for Order #{order.id}")
+        else:
+            print(f"[Payment Email WARNING] No associated Order object attached to Payment reference '{reference}'")
+    else:
+        print(f"[Payment Email INFO] Purpose '{purpose}' is not classified as an order payment. Skipping seller notification.")
 
 
 # ==========================================

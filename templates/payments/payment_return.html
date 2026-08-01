@@ -59,6 +59,7 @@
             color: white;
             font-size: 16px;
             cursor: pointer;
+            width: 100%;
         }
 
         .btn:hover {
@@ -74,11 +75,9 @@
     {% if status == "completed" %}
         <div class="icon success">✔</div>
         <h2>Payment Successful</h2>
-
     {% elif status == "failed" %}
         <div class="icon failed">✖</div>
         <h2>Payment Failed</h2>
-
     {% else %}
         <div class="icon pending">⏳</div>
         <h2>Payment Pending</h2>
@@ -87,18 +86,47 @@
     <p><strong>Transaction:</strong> {{ tx_ref }}</p>
     <p><strong>Amount:</strong> MWK {{ amount }}</p>
 
-    <button class="btn" onclick="closePage()">Continue</button>
+    <button class="btn" onclick="closePage()">Return to MalaTrade</button>
 
 </div>
 
 <script>
+    // 🔑 1. Send background message to parent Flutter Web tab/app immediately
+    try {
+        const channel = new BroadcastChannel('payment_channel');
+        channel.postMessage({ status: '{{ status }}', tx_ref: '{{ tx_ref }}' });
+    } catch(e) {
+        console.log("BroadcastChannel not supported", e);
+    }
+
+    // Save to localStorage as backup
+    localStorage.setItem('last_payment_status', JSON.stringify({
+        status: '{{ status }}',
+        tx_ref: '{{ tx_ref }}',
+        time: Date.now()
+    }));
+
+    // 🔑 2. Force redirection to MalaTrade app (Breaks out of PayChangu domain)
     function closePage() {
-        // Works in WebView or browser
-        if (window.history.length > 1) {
-            window.history.back();
-        } else {
-            window.location.href = "/";
+        const appUrl = "https://malatrade.com/";
+
+        // Try closing window first
+        try {
+            window.close();
+        } catch (e) {
+            console.log("Window close prevented", e);
         }
+
+        // Force the outer-most parent window to jump to MalaTrade
+        setTimeout(function() {
+            if (window.top && window.top !== window) {
+                // If embedded inside PayChangu's iframe
+                window.top.location.href = appUrl;
+            } else {
+                // Direct tab navigation
+                window.location.replace(appUrl);
+            }
+        }, 100);
     }
 </script>
 

@@ -1,3 +1,4 @@
+import random
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -5,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from utils.sms import send_sms
 from django.utils import timezone
+from django.conf import settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
@@ -16,9 +18,6 @@ from .serializers import (
 )
 
 from payments.core.escrow import EscrowService
-
-import random
-
 
 
 def generate_customer_code():
@@ -38,7 +37,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         if user.is_staff or user.is_superuser:
             return Delivery.objects.all().order_by('-id')
 
-        if user.user_type == "delivery":
+        if getattr(user, 'user_type', None) == "delivery":
             return Delivery.objects.filter(
                 delivery_person__user=user
             ).order_by('-id')
@@ -54,7 +53,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     def assign(self, request, pk=None):
         delivery = self.get_object()
 
-        if request.user.user_type != "shop_owner":
+        if getattr(request.user, 'user_type', None) != "shop_owner":
             raise PermissionDenied(
                 "Only shop owners can assign deliveries"
             )
@@ -79,7 +78,7 @@ class DeliveryViewSet(viewsets.ModelViewSet):
     def update_tracking(self, request, pk=None):
         delivery = self.get_object()
 
-        if request.user.user_type not in [
+        if getattr(request.user, 'user_type', None) not in [
             "delivery",
             "shop_owner"
         ]:
@@ -113,36 +112,35 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        delivery = Delivery.objects.filter(
-            order_id=order_id
-        ).first()
+        deliveries = Delivery.objects.filter(order_id=order_id)
 
-        if not delivery:
+        if not deliveries.exists():
             return Response(
-                {"error": "Delivery not found"},
+                {"error": "No deliveries found for this order"},
                 status=status.HTTP_404_NOT_FOUND
             )
 
         return Response(
-            DeliverySerializer(delivery).data
+            DeliverySerializer(deliveries, many=True).data
         )
 
     # =========================
     # OPEN DELIVERY BY CODE
     # =========================
-    @action(detail=False,methods=['post'],permission_classes=[AllowAny],authentication_classes=[])
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny], authentication_classes=[])
     def open_by_code(self, request):
         code = request.data.get("code")
         
         if not code:
-            return Response({"error": "Code required"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Code required"}, status=status.HTTP_400_BAD_REQUEST)
 
         delivery = Delivery.objects.filter(delivery_code=code).first()
 
         if not delivery:
-            return Response({"error": "Invalid code"},status=status.HTTP_404_NOT_FOUND)
+            return Response({"error": "Invalid code"}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(DeliverySerializer(delivery).data)
+
     # =========================
     # UPDATE DELIVERY STATUS
     # =========================
@@ -151,13 +149,11 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery = self.get_object()
 
         if (
-            request.user.user_type == "delivery"
+            getattr(request.user, 'user_type', None) == "delivery"
             and delivery.delivery_person
             and delivery.delivery_person.user != request.user
         ):
-            raise PermissionDenied(
-                "You are not assigned to this delivery"
-            )
+            raise PermissionDenied("You are not assigned to this delivery")
 
         new_status = request.data.get("status")
 
@@ -177,66 +173,87 @@ class DeliveryViewSet(viewsets.ModelViewSet):
 
         delivery.status = new_status
 
-        # Generate customer verification code and notify customer when status switches to in_transit
-        if (
-            new_status == "in_transit"
-            and not delivery.customer_delivery_code
-        ):
+        # 🎯 TRIGGER: GENERATE CODE + DISPATCH EMAIL/SMS
+        if new_status == "in_transit" and not delivery.customer_delivery_code:
+            # 1. GENERATE CODE & SAVE
             delivery.customer_delivery_code = generate_customer_code()
             delivery.save()
 
-            # Extract customer contact details (adjust attribute access based on your Order/User relationships)
-            customer = getattr(delivery.order, 'customer', None) or getattr(delivery, 'customer', None)
-            customer_email = getattr(customer, 'email', None) if customer else None
-            customer_phone = getattr(delivery, 'customer_phone', None) or (getattr(customer, 'phone_number', None) if customer else None)
-            customer_name = getattr(customer, 'first_name', None) or getattr(customer, 'username', 'Valued Customer')
-            order_id = str(delivery.order_id if hasattr(delivery, 'order_id') else delivery.id)
+            print(f"⚡ [CODE GENERATED] Delivery #{delivery.id} code created: {delivery.customer_delivery_code}")
 
-            # 1. Send SMS via utils.sms
+            # 2. RESOLVE CONTACTS
+            order = getattr(delivery, 'order', None)
+            customer = (
+                getattr(order, 'customer', None) or 
+                getattr(order, 'user', None) or 
+                getattr(delivery, 'customer', None)
+            )
+
+            customer_email = getattr(customer, 'email', None) if customer else None
+            customer_phone = (
+                getattr(delivery, 'customer_phone', None) or 
+                (getattr(customer, 'phone_number', None) if customer else None) or
+                (getattr(customer, 'phone', None) if customer else None)
+            )
+            customer_name = getattr(customer, 'first_name', None) or getattr(customer, 'username', 'Customer')
+            order_id = str(getattr(order, 'id', delivery.id))
+            
+            seller = getattr(delivery, 'seller', None)
+            shop_name = getattr(getattr(seller, 'shop', None), 'name', 'MalaTrade Shop')
+
+            # 3. DISPATCH SMS
             if customer_phone:
                 sms_text = (
-                    f"MalaTrade Alert: Your package for order #{order_id} is in transit! "
-                    f"Your secret delivery code is {delivery.customer_delivery_code}. "
-                    f"Share this code with the seller/courier ONLY after inspecting your package to release funds."
+                    f"MalaTrade: Your order #{order_id} from {shop_name} is on the way! "
+                    f"Verification code: {delivery.customer_delivery_code}. "
+                    f"Provide this code to your driver upon receiving your items."
                 )
                 try:
                     send_sms(customer_phone, sms_text)
+                    print(f"[SMS SENT] Sent code {delivery.customer_delivery_code} to {customer_phone}")
                 except Exception as e:
-                    # Log error in production so SMS failure doesn't block status update
-                    print(f"SMS dispatch failed: {e}")
+                    print(f"[SMS ERROR] Failed sending to {customer_phone}: {e}")
 
-            # 2. Send HTML Email
+            # 4. DISPATCH EMAIL (CLEAN COPY - PREVENTS SPAM DISCARD)
             if customer_email:
-                subject = f"MalaTrade: Your Order #{order_id} is In Transit"
+                subject = f"Delivery Update for Order #{order_id}"
                 context = {
                     'customer_name': customer_name,
                     'order_id': order_id,
                     'customer_code': delivery.customer_delivery_code,
+                    'shop_name': shop_name,
                 }
                 
-                html_message = render_to_string('emails/delivery_in_transit_email.html', context)
+                html_message = None
+                try:
+                    html_message = render_to_string('emails/delivery_in_transit_email.html', context)
+                except Exception as tmpl_err:
+                    print(f"[Template Warning] Using plain text fallback: {tmpl_err}")
+
+                # Clean text body without financial spam trigger words
                 plain_message = (
                     f"Hello {customer_name},\n\n"
-                    f"Your order #{order_id} is now in transit!\n"
-                    f"Your confidential delivery code is: {delivery.customer_delivery_code}\n\n"
-                    f"IMPORTANT:\n"
-                    f"- Keep this code secret until you receive and inspect your items.\n"
-                    f"- Sharing this code with your courier releases the escrow payment to the seller.\n"
-                    f"- If you receive the item but forget to provide the code, funds will automatically release after 2 days (48 hrs) if no dispute is opened.\n\n"
-                    f"Best regards,\nMalaTrade Support Team"
+                    f"Your order #{order_id} from {shop_name} has been dispatched and is currently in transit.\n\n"
+                    f"Verification Code: {delivery.customer_delivery_code}\n\n"
+                    f"Please share this verification code with your delivery driver upon receiving and verifying your package.\n\n"
+                    f"Thank you for shopping on MalaTrade.\n"
+                    f"MalaTrade Support Team"
                 )
 
                 try:
                     send_mail(
                         subject=subject,
                         message=plain_message,
-                        from_email="orders@malatrade.com",
+                        from_email="support@malatrade.com",
                         recipient_list=[customer_email],
                         html_message=html_message,
                         fail_silently=False,
                     )
+                    print(f"[EMAIL SENT] Sent code {delivery.customer_delivery_code} to {customer_email}")
                 except Exception as e:
-                    print(f"Email dispatch failed: {e}")
+                    print(f"[EMAIL ERROR] Email dispatch failed: {e}")
+            else:
+                print(f"[EMAIL FAILED] Customer email could not be resolved!")
 
         else:
             delivery.save()
@@ -265,13 +282,11 @@ class DeliveryViewSet(viewsets.ModelViewSet):
             )
 
         if (
-            request.user.user_type == "delivery"
+            getattr(request.user, 'user_type', None) == "delivery"
             and delivery.delivery_person
             and delivery.delivery_person.user != request.user
         ):
-            raise PermissionDenied(
-                "You are not assigned to this delivery"
-            )
+            raise PermissionDenied("You are not assigned to this delivery")
 
         code = request.data.get("code")
 
@@ -292,30 +307,37 @@ class DeliveryViewSet(viewsets.ModelViewSet):
         delivery.delivered_at = timezone.now()
         delivery.save()
 
-        # 2. Release Funds from Escrow
+        # 2. Release Escrow
         try:
-            # Pass delivery or delivery.order depending on your EscrowService signature
             EscrowService.release_funds(delivery)
+            print(f"[Escrow Release] Released funds for Delivery ID {delivery.id}")
         except Exception as e:
-            print(f"Escrow release failed for delivery {delivery.id}: {e}")
+            print(f"[Escrow Release ERROR] Failed for delivery {delivery.id}: {e}")
 
-        # 3. Send Notification Email to Seller
-        seller = delivery.seller  # Adjust attribute if seller is linked differently
-        if seller and seller.email:
-            seller_name = seller.first_name or seller.username
-            order_id = str(delivery.order_id if hasattr(delivery, 'order_id') else delivery.id)
+        # 3. Notify Seller
+        seller = getattr(delivery, 'seller', None)
+        seller_email = getattr(seller, 'email', None) if seller else None
 
-            subject = f"MalaTrade: Payment Released for Order #{order_id}"
+        if seller_email:
+            seller_name = getattr(seller, 'first_name', None) or getattr(seller, 'username', 'Merchant')
+            order_id = str(getattr(delivery, 'order_id', delivery.id))
+
+            subject = f"Order #{order_id} Delivery Confirmed"
             context = {
                 'seller_name': seller_name,
                 'order_id': order_id,
             }
 
-            html_message = render_to_string('emails/delivery_completed_seller_email.html', context)
+            html_message = None
+            try:
+                html_message = render_to_string('emails/delivery_completed_seller_email.html', context)
+            except Exception:
+                pass
+
             plain_message = (
                 f"Hello {seller_name},\n\n"
-                f"Order #{order_id} has been delivered successfully!\n"
-                f"The customer verified receipt with their delivery code, and the escrow funds have been released to your account.\n\n"
+                f"Order #{order_id} has been delivered successfully.\n"
+                f"The customer confirmed delivery with their code, and your payout has been processed.\n\n"
                 f"Best regards,\nMalaTrade Support Team"
             )
 
@@ -323,15 +345,16 @@ class DeliveryViewSet(viewsets.ModelViewSet):
                 send_mail(
                     subject=subject,
                     message=plain_message,
-                    from_email="orders@malatrade.com",
-                    recipient_list=[seller.email],
+                    from_email="support@malatrade.com",
+                    recipient_list=[seller_email],
                     html_message=html_message,
                     fail_silently=False,
                 )
+                print(f"[Seller Notification] Sent completion email to {seller_email}")
             except Exception as e:
-                print(f"Seller email notification failed: {e}")
+                print(f"[Seller Notification ERROR] Email failed: {e}")
 
         return Response({
-            "message": "Delivery completed successfully and funds released from escrow",
+            "message": "Delivery completed successfully",
             "status": delivery.status
         })

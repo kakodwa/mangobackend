@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Delivery Completed & Escrow Funds Released</title>
+    <title>Delivery Confirmed - Order Completed</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f5f7; padding: 20px 0;">
@@ -26,11 +26,11 @@
                         </td>
                     </tr>
 
-                    <!-- Hero Banner (Green for Success) -->
+                    <!-- Hero Banner -->
                     <tr>
                         <td style="background-color: #16a34a; padding: 25px 40px; text-align: center;">
                             <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-                                Delivery Confirmed & Payment Released! 🎉
+                                Delivery Confirmed & Order Completed
                             </h1>
                         </td>
                     </tr>
@@ -40,21 +40,21 @@
                         <td style="padding: 32px 40px 20px 40px; color: #333333; line-height: 1.6; font-size: 15px;">
                             <p style="margin-top: 0;">Hello <strong>{{ seller_name }}</strong>,</p>
                             <p style="color: #555555;">
-                                Great news! The customer has verified receipt of order <strong>#{{ order_id }}</strong> using their delivery code.
+                                Great news! The customer has confirmed receipt of order <strong>#{{ order_id }}</strong> using their delivery code.
                             </p>
 
-                            <!-- Success Banner Box -->
-                            <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 6px; padding: 20px; text-align: center; margin: 24px 0;">
-                                <span style="display: block; font-size: 13px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">
-                                    Escrow Funds Status
+                            <!-- Clean Status Callout Box -->
+                            <div style="background-color: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 6px; padding: 18px; text-align: center; margin: 24px 0;">
+                                <span style="display: block; font-size: 12px; font-weight: 700; color: #16a34a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">
+                                    Payment Status
                                 </span>
-                                <span style="font-size: 22px; font-weight: 800; color: #ff6b00;">
-                                    RELEASED TO YOUR ACCOUNT
+                                <span style="font-size: 18px; font-weight: 700; color: #ff6b00;">
+                                    Credited to Your Merchant Balance
                                 </span>
                             </div>
 
                             <p style="font-size: 14px; color: #555555; margin-bottom: 24px;">
-                                The funds held in escrow for this transaction have been transferred directly to your <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> seller balance/wallet.
+                                The payment for this order has been credited directly to your <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> seller wallet and is now available for withdrawal.
                             </p>
                         </td>
                     </tr>

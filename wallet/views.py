@@ -1,10 +1,26 @@
+# views.py
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.pagination import PageNumberPagination
+from django.db import transaction
+
 from .models import Wallet, WalletTransaction, Withdrawal
 from payments.services.paychangu_service import PayChanguService 
-from django.db import transaction 
-from .serializers import WalletSerializer, WalletTransactionSerializer, WithdrawalSerializer, WithdrawalCreateSerializer
+from .serializers import (
+    WalletSerializer, 
+    WalletTransactionSerializer, 
+    WithdrawalSerializer, 
+    WithdrawalCreateSerializer
+)
+
+
+class StandardResultsSetPagination(PageNumberPagination):
+    """Custom pagination configuration for wallet records."""
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class WalletViewSet(viewsets.ViewSet):
@@ -19,17 +35,32 @@ class WalletViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['get'])
     def transactions(self, request):
-        """Get wallet transactions"""
+        """Get paginated wallet transactions"""
         wallet, created = Wallet.objects.get_or_create(user=request.user)
         transactions = wallet.transactions.all()
+        
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(transactions, request)
+        
+        if page is not None:
+            serializer = WalletTransactionSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = WalletTransactionSerializer(transactions, many=True)
         return Response(serializer.data)
-
 
     @action(detail=False, methods=['get'])
     def withdrawals(self, request):
         """Get user withdrawals"""
         withdrawals = Withdrawal.objects.filter(user=request.user)
+        
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(withdrawals, request)
+        
+        if page is not None:
+            serializer = WithdrawalSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
+
         serializer = WithdrawalSerializer(withdrawals, many=True)
         return Response(serializer.data)
 
@@ -45,7 +76,7 @@ class WalletViewSet(viewsets.ViewSet):
         
         try:
             with transaction.atomic():
-                # 1. Lock wallet row in the database so no concurrent requests can mess with it
+                # 1. Lock wallet row in database to prevent concurrent requests
                 wallet = Wallet.objects.select_for_update().get(user=request.user)
                 
                 if wallet.balance < amount:
@@ -87,15 +118,13 @@ class WalletViewSet(viewsets.ViewSet):
             payout_status = str(payout_response.get('status', '')).lower()
             payout_message = payout_response.get('message', '')
 
-            # Check if PayChangu successfully accepted and queued the payout request
+            # Check if PayChangu successfully accepted and queued payout request
             if payout_status in ['success', 'completed'] or 'successfully' in payout_message.lower():
-                # ✅ Keep it as 'approved' (meaning handoff succeeded). 
-                # The Master Webhook will switch this to 'processed' once the money hits their phone!
                 withdrawal.status = 'approved' 
                 withdrawal.save()
                 return Response(WithdrawalSerializer(withdrawal).data, status=status.HTTP_201_CREATED)
             else:
-                # If PayChangu rejected the raw data setup layout right away, execute local recovery refund
+                # Local recovery refund if initial gateway handoff fails
                 self._refund_wallet(wallet.id, amount, withdrawal)
                 return Response({
                     "error": "PayChangu payout initialization failed", 
@@ -107,9 +136,8 @@ class WalletViewSet(viewsets.ViewSet):
             traceback.print_exc()
             return Response({"error": f"An internal error occurred: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
     def _refund_wallet(self, wallet_id, amount, withdrawal):
-        """Helper logic to revert funds if the payout gateway immediately drops out"""
+        """Helper logic to revert funds if the payout gateway drops out"""
         with transaction.atomic():
             w = Wallet.objects.select_for_update().get(id=wallet_id)
             w.balance += amount
@@ -119,6 +147,3 @@ class WalletViewSet(viewsets.ViewSet):
             withdrawal.status = 'rejected'
             withdrawal.rejection_reason = "PayChangu gateway rejection."
             withdrawal.save()
-
-
-
