@@ -117,7 +117,7 @@ class Shop(models.Model):
         """Renders HTML template & sends email with attached inline QR code."""
         recipient = self.email or self.owner.email
         owner_name = self.owner.get_full_name() or self.owner.username
-        subject = f"🎉 Your Shop '{self.name}' is Approved on MalaTrade!"
+        subject = f"Your Shop '{self.name}' is Approved on MalaTrade!"
         shop_url = f"https://malatrade.com/shop/{self.id}"
 
         has_qr = bool(self.qr_code)
