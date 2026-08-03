@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Shop is Approved!</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #f4f5f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f5f7; padding: 20px 0;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 550px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+                    
+                    <!-- Top Brand Accent Bar (Green) -->
+                    <tr>
+                        <td style="background-color: #16a34a; height: 6px; line-height: 6px; font-size: 0px;">&nbsp;</td>
+                    </tr>
+
+                    <!-- Header with Split Color Text Logo -->
+                    <tr>
+                        <td align="center" style="padding: 30px 40px 20px 40px; background-color: #ffffff;">
+                            <h2 style="margin: 0; font-size: 30px; font-weight: 800; letter-spacing: 1px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
+                                <span style="color: #ff6b00;">MALA</span><span style="color: #16a34a;">TRADE</span>
+                            </h2>
+                        </td>
+                    </tr>
+
+                    <!-- Hero Banner (Orange) -->
+                    <tr>
+                        <td style="background-color: #ff6b00; padding: 25px 40px; text-align: center;">
+                            <h1 style="color: #ffffff; font-size: 20px; margin: 0; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                🎉 Your Shop is Approved!
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content Area -->
+                    <tr>
+                        <td style="padding: 32px 40px 20px 40px; color: #333333; line-height: 1.6; font-size: 15px;">
+                            <p style="margin-top: 0;">Hello <strong>{{ owner_name }}</strong>,</p>
+                            <p style="color: #555555;">
+                                Great news! Your shop application for <strong>{{ shop_name }}</strong> has been officially verified and approved. Your online store is now live on <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span>.
+                            </p>
+
+                            <!-- QR Code Section -->
+                            {% if has_qr %}
+                            <div style="background-color: #fffbf7; border: 2px dashed #ff6b00; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
+                                <span style="display: block; font-size: 13px; font-weight: 700; color: #ff6b00; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;">
+                                    Your Official Shop QR Code
+                                </span>
+                                
+                                <img src="cid:shop_qr_code" alt="Shop QR Code" style="width: 180px; height: 180px; display: block; margin: 0 auto 12px auto;">
+                                
+                                <p style="margin: 0; font-size: 13px; color: #4b5563; line-height: 1.5;">
+                                    <strong>How to use this QR Code:</strong> You can download and print this QR code, then attach it to your physical products, packages, or store counter! When customers scan it with their mobile phones, they will be instantly redirected to your online shop on <span style="font-weight: 700; color: #ff6b00;">MALA</span><span style="font-weight: 700; color: #16a34a;">TRADE</span> to view your products and make purchases directly online.
+                                </p>
+                            </div>
+                            {% endif %}
+
+                            <!-- Action Notice Box (Green Theme) -->
+                            <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 18px; margin-bottom: 24px;">
+                                <h4 style="margin: 0 0 8px 0; color: #16a34a; font-size: 14px;">
+                                    Next Steps for Your Shop:
+                                </h4>
+                                <ul style="margin: 0; padding-left: 18px; color: #374151; font-size: 13px; line-height: 1.5;">
+                                    <li style="margin-bottom: 6px;">
+                                        <strong>Visit your store:</strong> Click the button below to view your public store page.
+                                    </li>
+                                    <li style="margin-bottom: 6px;">
+                                        <strong>Upload Items:</strong> Add products, pictures, and prices so customers can start placing orders.
+                                    </li>
+                                    <li>
+                                        <strong>Share your Link:</strong> Send your shop URL to customer networks to build sales.
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="margin: 28px 0 10px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{{ shop_url }}" target="_blank" style="background-color: #ff6b00; color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 6px; font-weight: 700; font-size: 15px; display: inline-block;">
+                                            Visit Your Online Store
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <p style="font-size: 13px; color: #777777; margin-top: 24px; margin-bottom: 0; text-align: center;">
+                                Need help? Contact MalaTrade support directly through your vendor portal.
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Divider -->
+                    <tr>
+                        <td style="padding: 0 40px;">
+                            <hr style="border: none; border-top: 1px solid #eeeeee; margin: 0;">
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 24px 40px 30px 40px; text-align: center; color: #888888; font-size: 12px; line-height: 1.5;">
+                            <p style="margin: 0 0 6px 0;">Best regards,</p>
+                            <p style="margin: 0 0 16px 0; font-weight: 600;">
+                                The <span style="color: #ff6b00;">MALA</span><span style="color: #16a34a;">TRADE</span> Support Team
+                            </p>
+                            <p style="margin: 0; color: #aaaaaa; font-size: 11px;">
+                                &copy; {% now "Y" %} <span style="color: #ff6b00;">MALA</span><span style="color: #16a34a;">TRADE</span>. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

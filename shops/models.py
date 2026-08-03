@@ -1,13 +1,17 @@
 from io import BytesIO
-
 import qrcode
+from email.mime.image import MIMEImage
+
+from django.conf import settings
 from django.core.files import File
 from django.db import models
 from django.utils.text import slugify
+from django.contrib.contenttypes.fields import GenericRelation
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from users.models import User
 from mangohub.models import Review
-from django.contrib.contenttypes.fields import GenericRelation
 
 
 class Shop(models.Model):
@@ -87,9 +91,7 @@ class Shop(models.Model):
         return self.name
 
     def generate_qr(self):
-        """
-        Generates a QR code only once pointing to a public tracking endpoint.
-        """
+        """Generates public tracking QR code for shop."""
         backend_domain = "https://malatrade.com" 
         qr_url = f"{backend_domain}/qr/shop/{self.id}/"
 
@@ -106,39 +108,88 @@ class Shop(models.Model):
 
         buffer = BytesIO()
         image.save(buffer, format="PNG")
-        
-        # 🔥 THE CRITICAL FIX: Rewind the buffer pointer to the beginning!
         buffer.seek(0)
         
         filename = f"shop_{self.id}.png"
         self.qr_code.save(filename, File(buffer), save=False)
 
+    def send_approval_email(self):
+        """Renders HTML template & sends email with attached inline QR code."""
+        recipient = self.email or self.owner.email
+        owner_name = self.owner.get_full_name() or self.owner.username
+        subject = f"🎉 Your Shop '{self.name}' is Approved on MalaTrade!"
+        shop_url = f"https://malatrade.com/shop/{self.id}"
+
+        has_qr = bool(self.qr_code)
+
+        context = {
+            'owner_name': owner_name,
+            'shop_name': self.name,
+            'shop_url': shop_url,
+            'has_qr': has_qr,
+        }
+
+        # Render HTML and plain-text templates
+        text_content = render_to_string('emails/shop_approved.txt', context)
+        html_content = render_to_string('emails/shop_approved.html', context)
+
+        # Send via settings.DEFAULT_FROM_EMAIL ("MalaTrade Support <support@malatrade.com>")
+        msg = EmailMultiAlternatives(
+            subject=subject,
+            body=text_content,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            to=[recipient]
+        )
+        msg.attach_alternative(html_content, "text/html")
+
+        # Attach QR Code Image as Inline CID
+        if has_qr:
+            try:
+                with self.qr_code.open('rb') as f:
+                    mime_image = MIMEImage(f.read())
+                    mime_image.add_header('Content-ID', '<shop_qr_code>')
+                    mime_image.add_header('Content-Disposition', 'inline', filename=f"shop_{self.id}_qr.png")
+                    msg.attach(mime_image)
+            except Exception:
+                pass  # Fallback gracefully if storage read fails
+
+        msg.send(fail_silently=False)
+
     def save(self, *args, **kwargs):
+        # 1. Generate unique slug
         if not self.slug:
-            # 1. Generate base slug
             base_slug = slugify(self.name)
             slug = base_slug
             counter = 1
-            
-            # 2. Loop until a completely unique slug is found in the database
-            # We exclude the current instance (self.pk) if it's an update
             Klass = self.__class__
             while Klass.objects.filter(slug=slug).exclude(pk=self.pk).exists():
                 slug = f"{base_slug}-{counter}"
                 counter += 1
-                
             self.slug = slug
+
+        # 2. Track status update to 'approved'
+        status_changed_to_approved = False
+        if self.pk:
+            old_instance = Shop.objects.filter(pk=self.pk).only('status').first()
+            if old_instance and old_instance.status != 'approved' and self.status == 'approved':
+                status_changed_to_approved = True
 
         is_new = self.pk is None
 
-        # 3. Commit regular data values to database first
+        # 3. Save regular data
         super().save(*args, **kwargs)
 
-        # 4. Safely trigger file stream compilation downstream
+        # 4. Generate QR code on creation
         if is_new and not self.qr_code:
             self.generate_qr()
-            # Use super().save to directly update fields, bypassing endless recursion loops
             super().save(update_fields=["qr_code"])
+
+        # 5. Send approval email with QR code inline attachment
+        if status_changed_to_approved:
+            if not self.qr_code:
+                self.generate_qr()
+                super().save(update_fields=["qr_code"])
+            self.send_approval_email()
 
 
 class ShopReview(models.Model):

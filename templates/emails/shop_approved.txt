@@ -1,0 +1,14 @@
+Hello {{ owner_name }},
+
+Great news! Your shop '{{ shop_name }}' has been officially verified and approved on MalaTrade!
+
+Your Public Online Shop URL:
+{{ shop_url }}
+
+YOUR OFFICIAL SHOP QR CODE:
+Included in this email is your shop QR code. You can print and attach this QR code to your physical products, package stickers, or store counter. When customers scan it with their phone, they will be redirected to your online store on MalaTrade to browse items and buy directly.
+
+Thank you for choosing MalaTrade!
+
+Best regards,
+The MalaTrade Support Team
