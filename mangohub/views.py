@@ -131,3 +131,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
     # 🛠️ Pass the user explicitly into the save handler
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+from django.views.generic import TemplateView
+
+
+class TermsAndConditionsView(TemplateView):
+    template_name = "legal/terms.html"
+
+
+class PrivacyPolicyView(TemplateView):
+    template_name = "legal/privacy.html"

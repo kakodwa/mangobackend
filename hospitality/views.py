@@ -1,20 +1,27 @@
-from datetime import timedelta
-
-from django.db.models import Q
-from rest_framework import viewsets, permissions, status
-from rest_framework.viewsets import ReadOnlyModelViewSet
-from django.core.exceptions import ValidationError
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from payments.models import EscrowWallet
-from payments.services.settlement_service import SettlementService
-from datetime import timedelta
+from datetime import datetime, timedelta
 import json
 import random
 import string
-from .permissions import IsHospitalityOwner
-from django.core import signing
 
+from django.db import transaction
+from django.db.models import Q
+from django.core import signing
+from django.core.exceptions import ValidationError
+from django.core.signing import (
+    TimestampSigner,
+    BadSignature,
+    SignatureExpired,
+)
+
+from rest_framework import viewsets, permissions, status
+from rest_framework.viewsets import ReadOnlyModelViewSet
+from rest_framework.decorators import action
+from rest_framework.response import Response
+
+from payments.models import EscrowWallet
+from payments.services.settlement_service import SettlementService
+
+from .permissions import IsHospitalityOwner
 from .models import Lodge, Room, Booking, Amenity
 from .serializers import (
     LodgeSerializer,
@@ -23,27 +30,19 @@ from .serializers import (
     AmenitySerializer
 )
 
-
-from django.core.signing import (
-    TimestampSigner,
-    BadSignature,
-    SignatureExpired,
-)
-
 signer = TimestampSigner()
+
 
 def verify_booking_qr(token, max_age=86400):
     try:
         value = signer.unsign(token, max_age=max_age)
         data = json.loads(value)
         return data
-
     except (BadSignature, SignatureExpired, json.JSONDecodeError):
         return None
 
 
 def generate_booking_reference():
-
     return 'BK-' + ''.join(
         random.choices(
             string.ascii_uppercase + string.digits,
@@ -58,14 +57,12 @@ class AmenityViewSet(ReadOnlyModelViewSet):
 
 
 class LodgeViewSet(viewsets.ModelViewSet):
-    # queryset = Lodge.objects.filter(is_active=True)
     serializer_class = LodgeSerializer
 
     def get_queryset(self):
-
         # Public users can only see active lodges
         if self.action in ['list', 'retrieve']:
-            return Lodge.objects.filter(is_active=False)
+            return Lodge.objects.filter(is_active=True)
 
         # Authenticated users can only manage their own lodges
         return Lodge.objects.filter(
@@ -73,7 +70,6 @@ class LodgeViewSet(viewsets.ModelViewSet):
         )
 
     def get_permissions(self):
-
         # Anyone can view lodges
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
@@ -81,26 +77,17 @@ class LodgeViewSet(viewsets.ModelViewSet):
         # Any authenticated user can create/update/delete
         return [permissions.IsAuthenticated()]
 
-    # =========================
-    # FULL CREATE DEBUG
-    # =========================
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
-        return Response(serializer.data,status=status.HTTP_201_CREATED)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    # =========================
-    # FULL UPDATE DEBUG
-    # =========================
     def update(self, request, *args, **kwargs):
-
         partial = kwargs.pop('partial', False)
-
-        # Only owner can update because of get_queryset()
         instance = self.get_object()
 
         serializer = self.get_serializer(
@@ -110,8 +97,6 @@ class LodgeViewSet(viewsets.ModelViewSet):
         )
 
         if not serializer.is_valid():
-
-
             return Response(
                 serializer.errors,
                 status=status.HTTP_400_BAD_REQUEST
@@ -119,22 +104,14 @@ class LodgeViewSet(viewsets.ModelViewSet):
 
         serializer.save()
 
-
-
         return Response(
             serializer.data,
             status=status.HTTP_200_OK
         )
 
     def perform_create(self, serializer):
-
         user = self.request.user
-
-
-
         lodge = serializer.save(owner=user)
-
-
 
     @action(
         detail=False,
@@ -142,15 +119,10 @@ class LodgeViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated]
     )
     def my_lodges(self, request):
-
         try:
-  
-
             lodges = Lodge.objects.filter(
                 owner=request.user
             ).order_by('-created_at')
-
-     
 
             serializer = self.get_serializer(
                 lodges,
@@ -158,18 +130,17 @@ class LodgeViewSet(viewsets.ModelViewSet):
                 context={"request": request}
             )
 
-   
-
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
         except Exception as e:
+            import traceback
+            print("❌ MY_LODGES BACKEND ERROR:")
+            traceback.print_exc()
 
-            print("Error:", str(e))
-
-        return Response(
-            {"detail": "Failed to load lodges"},
-            status=500
-        )
+            return Response(
+                {"detail": f"Failed to load lodges: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class RoomViewSet(viewsets.ModelViewSet):
@@ -182,32 +153,25 @@ class RoomViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     def create(self, request, *args, **kwargs):
-
         serializer = self.get_serializer(data=request.data)
 
         if not serializer.is_valid():
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
-        return Response(serializer.data, status=201)
-
-   
-    @action(detail=True,methods=['get'],permission_classes=[permissions.AllowAny],authentication_classes=[])
+    @action(detail=True, methods=['get'], permission_classes=[permissions.AllowAny], authentication_classes=[])
     def availability(self, request, pk=None):
-
-
         bookings = Booking.objects.filter(
             room_id=pk,
-            booking_status__in=['confirmed',]# 'checked_in'
+            booking_status__in=['confirmed']
         )
 
         booked_dates = []
 
         for booking in bookings:
             current = booking.check_in_date
-
             while current <= booking.check_out_date:
                 booked_dates.append(current.strftime("%Y-%m-%d"))
                 current += timedelta(days=1)
@@ -229,12 +193,14 @@ class BookingViewSet(viewsets.ModelViewSet):
         return Booking.objects.filter(customer=user)
 
     def create(self, request, *args, **kwargs):
-        
         room_id = request.data.get('room')
         check_in_date = request.data.get('check_in_date')
         check_out_date = request.data.get('check_out_date')
 
-        room = Room.objects.get(id=room_id)
+        try:
+            room = Room.objects.get(id=room_id)
+        except Room.DoesNotExist:
+            return Response({'error': 'Room not found'}, status=status.HTTP_404_NOT_FOUND)
 
         overlapping_bookings = Booking.objects.filter(
             room=room,
@@ -250,8 +216,6 @@ class BookingViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        from datetime import datetime
-
         check_in = datetime.strptime(check_in_date, '%Y-%m-%d').date()
         check_out = datetime.strptime(check_out_date, '%Y-%m-%d').date()
 
@@ -263,9 +227,8 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(data=request.data)
 
-        serializer.is_valid(raise_exception=False)
         if not serializer.is_valid():
-            return Response(serializer.errors, status=400)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         serializer.save(
             customer=request.user,
@@ -279,66 +242,46 @@ class BookingViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-
     @action(detail=False, methods=['get'], permission_classes=[permissions.IsAuthenticated])
     def owner(self, request):
         user = request.user
-
         bookings = Booking.objects.filter(lodge__owner=user)
-
         serializer = self.get_serializer(bookings, many=True)
         return Response(serializer.data)
 
-     
-    # ==========================================
-    # QR SCAN CHECK-IN
-    # ==========================================
     @action(detail=False, methods=['post'])
     def scan_qr(self, request):
-
         qr_token = request.data.get("qr_data")
         if not qr_token:
-            return Response({"error": "QR code required"}, status=400)
+            return Response({"error": "QR code required"}, status=status.HTTP_400_BAD_REQUEST)
 
         data = verify_booking_qr(qr_token)
 
         if not data:
-            return Response({"error": "Invalid or expired QR code"}, status=400)
+            return Response({"error": "Invalid or expired QR code"}, status=status.HTTP_400_BAD_REQUEST)
 
         booking_id = data.get("booking_id")
-
 
         try:
             booking = Booking.objects.get(id=booking_id)
         except Booking.DoesNotExist:
-            return Response({"error": "Booking not found"}, status=404)
+            return Response({"error": "Booking not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        # ==========================================
-        # SECURITY CHECK
-        # Only lodge owner can scan booking QR
-        # ==========================================
         if booking.lodge.owner != request.user:
-            return Response({"error": "Not authorized"}, status=403)
+            return Response({"error": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
 
         if booking.booking_status == "checked_in":
-            return Response({"error": "Guest already checked in"}, status=400)
+            return Response({"error": "Guest already checked in"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             with transaction.atomic():
-                # ==========================================
-                # CHECK-IN GUEST
-                # ==========================================
                 booking.mark_checked_in(request.user)
-                # ==========================================
-                # RELEASE ESCROW
-                # ==========================================
                 try:
                     escrow = EscrowWallet.objects.select_for_update().get(
                         payment=booking.payment,
                         escrow_type="booking",
                         status="held"
-                        )
-
+                    )
                     SettlementService.release(escrow)
                 except EscrowWallet.DoesNotExist:
                     pass
@@ -347,61 +290,42 @@ class BookingViewSet(viewsets.ModelViewSet):
                 "message": "Check-in successful",
                 "booking_reference": booking.booking_reference,
                 "room_number": booking.room.room_number,
-                "booking_status": booking.booking_status,})
+                "booking_status": booking.booking_status,
+            })
 
         except Exception as e:
-            return Response({"error": str(e)}, status=400)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    
-  
-    # ==========================================
-    # MANUAL CHECK-IN
-    # ==========================================
     @action(detail=True, methods=['post'])
     def check_in(self, request, pk=None):
-
         try:
             booking = self.get_object()
 
-
             if booking.lodge.owner != request.user:
-                return Response({"error": "Not authorized"}, status=403)
+                return Response({"error": "Not authorized"}, status=status.HTTP_403_FORBIDDEN)
 
+            if booking.booking_status == "checked_in":
+                return Response({"error": "Guest already checked in"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if booking.booking_status == "checked_in":return Response({
-                "error": "Guest already checked in"})
-
-             
-            # ==========================================
-            # SECURITY CHECK
-            # ==========================================
             with transaction.atomic():
-                # ==========================================
-                # CHECK-IN GUEST
-                # ==========================================
                 booking.mark_checked_in(request.user)
-                # ==========================================
-                # RELEASE ESCROW
-                # ==========================================
                 try:
                     escrow = EscrowWallet.objects.select_for_update().get(
                         payment=booking.payment,
                         escrow_type="booking",
-                        status="held")
-
+                        status="held"
+                    )
                     SettlementService.release(escrow)
                 except EscrowWallet.DoesNotExist:
                     pass
 
-            return Response({"message": "Checked in successfully","status": booking.booking_status})
+            return Response({"message": "Checked in successfully", "status": booking.booking_status})
         except Exception as e:
-            return Response({"error": str(e)}, status=400)
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['post'])
     def cancel_booking(self, request, pk=None):
         booking = self.get_object()
-
         booking.booking_status = 'cancelled'
         booking.save()
-
         return Response({'message': 'Booking cancelled successfully'})

@@ -114,6 +114,8 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path("terms/", views.TermsAndConditionsView.as_view(), name="terms_and_conditions"),
+    path("privacy/", views.PrivacyPolicyView.as_view(), name="privacy_policy"),
     path("api/feed/", include("feed_engine.urls")),
     path("admin_app", include("admin_app.urls")),
     path("", include("shops.urls")),

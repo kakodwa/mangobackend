@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -57,13 +58,8 @@
         
         <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col z-20 transition-colors duration-200">
             <div class="h-16 flex items-center px-6 border-b border-gray-200 dark:border-gray-700 gap-2">
-                <div class="p-2 bg-brand-orange-500 rounded-lg text-white">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
-                </div>
-                <div>
-                    <h1 class="text-lg font-bold tracking-wider uppercase text-gray-900 dark:text-white">Mango<span class="text-brand-green-600 dark:text-brand-green-500">Hub</span></h1>
-                    <span class="text-xs text-gray-400 font-medium">Global Administrator</span>
-                </div>
+               <img src="{% static 'img/logo3.png' %}" alt="Malatrade Logo"
+             style="height:35px;width:auto;object-fit:contain;">
             </div>
 
             <nav class="flex-1 px-4 py-6 space-y-1 overflow-y-auto">

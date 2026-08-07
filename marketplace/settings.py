@@ -211,11 +211,12 @@ if not DEBUG:
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-MEDIA_URL = "/media/"
-
+# ================= MEDIA FILES =================
 if DEBUG:
+    MEDIA_URL = "/media/"
     MEDIA_ROOT = BASE_DIR / "media"
 
+    # Cloudinary for development
     CLOUDINARY_STORAGE = {
         "CLOUD_NAME": os.getenv("CLOUD_NAME"),
         "API_KEY": os.getenv("API_KEY"),
@@ -232,7 +233,9 @@ if DEBUG:
     }
 
 else:
-    MEDIA_ROOT = os.path.join("/home/malanxux/public_html", "media")
+    # Namecheap production media
+    MEDIA_URL = "https://malatrade.com/media/"
+    MEDIA_ROOT = "/home/malanxux/public_html/media"
 
     STORAGES = {
         "default": {
@@ -242,7 +245,6 @@ else:
             "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
         },
     }
-    
     
 # Tell Django/WhiteNoise not to panic over missing source maps (.map files)
 WHITENOISE_MANIFEST_STRICT = False
