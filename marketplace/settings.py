@@ -234,7 +234,7 @@ if DEBUG:
 
 else:
     # Namecheap production media
-    MEDIA_URL = "https://malatrade.com/media/"
+    MEDIA_URL = "https://www.malatrade.com/media/"
     MEDIA_ROOT = "/home/malanxux/public_html/media"
 
     STORAGES = {
