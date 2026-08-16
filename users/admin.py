@@ -43,6 +43,7 @@ class CustomUserAdmin(UserAdmin):
         "user_type",
     )
 
+    # 1. Edit User Form
     fieldsets = (
         (None, {
             "fields": (
@@ -85,6 +86,23 @@ class CustomUserAdmin(UserAdmin):
                 "last_login",
                 "date_joined",
             )
+        }),
+    )
+
+    # 🌟 2. Add User Form (Fixes missing fields when creating account in Admin Panel)
+    add_fieldsets = UserAdmin.add_fieldsets + (
+        ("Personal & Contact Details", {
+            "classes": ("wide",),
+            "fields": (
+                "first_name",
+                "last_name",
+                "email",
+                "phone_number",
+                "district",
+                #"gender",
+                #"date_of_birth",
+                #"user_type",
+            ),
         }),
     )
 

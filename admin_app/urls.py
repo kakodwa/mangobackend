@@ -11,4 +11,6 @@ urlpatterns = [
 
     path('console/dashboard/', AdminDashboardView.as_view(), name='admin_dashboard'),
     path('console/withdrawals/<int:pk>/<str:action_type>/', ProcessWithdrawalActionView.as_view(), name='process_withdrawal'),
+
+   
 ]

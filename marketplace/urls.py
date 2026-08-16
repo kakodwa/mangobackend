@@ -7,6 +7,7 @@ from users.views import UserViewSet
 from shops.views import ShopViewSet
 from products.views import ProductViewSet, BannerViewSet
 from orders.views import OrderViewSet
+from admin_app.views import get_pending_sms, mark_sms_sent
 from payments.views import PaymentViewSet, paychangu_webhook, payment_return_view
 from hospitality.views import LodgeViewSet, RoomViewSet, BookingViewSet, AmenityViewSet
 from mangohub.views import ReviewViewSet
@@ -109,6 +110,9 @@ urlpatterns = [
 
     path("api/cj/products/",ProductListView.as_view()),
     path("api/cj/products/<str:pid>/",ProductDetailView.as_view()),
+
+    path('api/get-pending-sms/', get_pending_sms, name='get_pending_sms'),
+    path('api/mark-sms-sent/', mark_sms_sent, name='mark_sms_sent'),
     
     path('api/tickets/check-in/', TicketCheckInAPIView.as_view(), name='ticket-checkin'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

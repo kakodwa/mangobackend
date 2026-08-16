@@ -18,6 +18,8 @@ from orders.models import Order
 from wallet.models import Withdrawal,CompanyWallet
 from payments.models import EscrowWallet
 
+from django.conf import settings
+
 from analytics.views import get_dashboard_analytics
 
 from django.contrib.auth import authenticate, login, logout
@@ -30,6 +32,11 @@ from django.views.generic import TemplateView
 from django.shortcuts import get_object_or_404, redirect
 from django.db.models import Sum, Count
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+
+
+from django.views.decorators.csrf import csrf_exempt
+import json
+from .models import SMSQueue
 
 class AdminRequiredMixin(LoginRequiredMixin, UserPassesTestMixin):
     login_url = 'admin_app:admin_login'
@@ -197,3 +204,26 @@ def admin_logout(request):
     logout(request)
     messages.info(request, "Logged out securely.")
     return redirect('admin_app:admin_login')
+
+
+def get_pending_sms(request):
+    if request.headers.get('X-Api-Key') != settings.SMS_API_KEY:
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+        
+    pending = SMSQueue.objects.filter(status='QUEUED')[:10]
+    data = [{'id': m.id, 'phone_number': m.phone_number, 'message': m.message} for m in pending]
+    
+    # Lock fetched messages
+    SMSQueue.objects.filter(id__in=[m.id for m in pending]).update(status='PROCESSING')
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+def mark_sms_sent(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        if request.headers.get('X-Api-Key') != settings.SMS_API_KEY:
+            return JsonResponse({'error': 'Unauthorized'}, status=401)
+            
+        SMSQueue.objects.filter(id=data.get('sms_id')).update(status=data.get('status', 'SENT'))
+        return JsonResponse({'status': 'updated'})
+    return JsonResponse({'error': 'Method not allowed'}, status=405)

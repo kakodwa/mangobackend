@@ -1,9 +1,9 @@
+# views.py
 from rest_framework import status, viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.core.mail import send_mail
-from django.template.loader import render_to_string
+
 from .models import User, Address
 from .serializers import UserSerializer, UserDetailSerializer, UserRegisterSerializer, AddressSerializer
 
@@ -12,20 +12,15 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     Highly secure ViewSet protecting user account profiles from unauthorized exposure.
     """
-    # 🛡️ Limit standard list/retrieve actions to return ONLY the logged-in user's data
     queryset = User.objects.none() 
     serializer_class = UserSerializer
     
-    # 🛡️ Dynamic permissions: allow unauthenticated access for registration
     def get_permissions(self):
         if self.action in ['create', 'register']:
             return [permissions.AllowAny()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        """
-        Ensures authenticated users can only view their own record instance.
-        """
         if self.request.user and self.request.user.is_authenticated:
             return User.objects.filter(id=self.request.user.id)
         return User.objects.none()
@@ -37,48 +32,12 @@ class UserViewSet(viewsets.ModelViewSet):
             return UserDetailSerializer
         return UserSerializer
 
-    def _send_welcome_email(self, user):
-        """
-        Helper method to render and send the HTML welcome email upon account creation.
-        """
-        if not user.email:
-            return
-
-        user_name = user.first_name or user.username
-        subject = "Welcome to MalaTrade!"
-        
-        context = {
-            'user_name': user_name,
-        }
-
-        # Render HTML template
-        html_message = render_to_string('emails/welcome_email.html', context)
-
-        # Plain text fallback
-        plain_message = (
-            f"Hello {user_name},\n\n"
-            f"Welcome to MalaTrade! Thank you for creating an account.\n"
-            f"Your account is ready to go.\n\n"
-            f"Best regards,\nMalaTrade Support Team"
-        )
-
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email="support@malatrade.com",
-            recipient_list=[user.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-
     # Standard ModelViewSet creation override
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            
-            # 📧 Trigger Welcome Email
-            self._send_welcome_email(user)
+            # 🌟 Both Email and SMS are now handled automatically by post_save signals!
 
             refresh = RefreshToken.for_user(user)
             return Response({
@@ -89,7 +48,6 @@ class UserViewSet(viewsets.ModelViewSet):
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    # 🛡️ Custom explicit registration endpoint
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
     def register(self, request):
         return self.create(request)
