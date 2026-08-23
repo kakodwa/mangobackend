@@ -1,3 +1,4 @@
+import time
 import requests
 from django.conf import settings
 
@@ -68,7 +69,7 @@ class PayChanguService:
         raise ValueError("Invalid phone number. PayChangu payouts support Airtel Money (099/098) or TNM Mpamba (088/089).")
 
     # =========================
-    # PAYMENT COLLECTIONS (UNCHANGED)
+    # PAYMENT COLLECTIONS
     # =========================
     def initiate_mobile_money(self, payment, phone_number):
         phone_data = self._normalize_phone(phone_number)
@@ -142,7 +143,7 @@ class PayChanguService:
         }
 
     # =========================
-    # REVISED PAYOUT ROUTINES
+    # PAYOUT ROUTINES (FIXED UNIQUE CHARGE_ID)
     # =========================
     def send_mobile_payout(self, withdrawal):
         """
@@ -152,16 +153,18 @@ class PayChanguService:
             phone_data = self._normalize_phone(withdrawal.account_number)
             user = withdrawal.user
             
-            # Safe fallbacks for user info to prevent API rejection if profile is incomplete
             first_name = user.first_name if user.first_name else "Customer"
             last_name = user.last_name if user.last_name else f"User{user.id}"
             email = user.email if user.email else "payouts@yourdomain.com"
+
+            # Appending unix timestamp ensures charge_id is unique even during retries
+            unique_charge_id = f"WD-MOB-{withdrawal.id}-{int(time.time())}"
 
             payload = {
                 "mobile": phone_data["phone"],
                 "mobile_money_operator_ref_id": phone_data["operator_id"],
                 "amount": f"{float(withdrawal.amount):.2f}",
-                "charge_id": f"WD-MOB-{withdrawal.id}",
+                "charge_id": unique_charge_id,
                 "email": email,
                 "first_name": first_name,
                 "last_name": last_name,
@@ -189,11 +192,14 @@ class PayChanguService:
             user = withdrawal.user
             email = user.email if user.email else "payouts@yourdomain.com"
 
+            # Appending unix timestamp ensures charge_id is unique even during retries
+            unique_charge_id = f"WD-BNK-{withdrawal.id}-{int(time.time())}"
+
             payload = {
                 "payout_method": "bank_transfer",
                 "bank_uuid": withdrawal.bank_uuid, 
                 "amount": f"{float(withdrawal.amount):.2f}",
-                "charge_id": f"WD-BNK-{withdrawal.id}",
+                "charge_id": unique_charge_id,
                 "bank_account_name": withdrawal.account_holder_name,
                 "bank_account_number": withdrawal.account_number,
                 "email": email,
