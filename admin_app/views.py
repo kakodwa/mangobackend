@@ -139,57 +139,190 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
 
 class ProcessWithdrawalActionView(AdminRequiredMixin, View):
     def post(self, request, pk, action_type):
-        withdrawal = get_object_or_404(Withdrawal, pk=pk)
-        
+        withdrawal = get_object_or_404(
+            Withdrawal.objects.select_related('user'),
+            pk=pk
+        )
+
+        # Prevent processing a withdrawal that has already been handled
         if withdrawal.status != 'pending':
-            messages.error(request, "This claim has already been settled and closed.")
+            messages.error(
+                request,
+                "This withdrawal has already been processed."
+            )
             return redirect('admin_app:admin_dashboard')
 
+        # ==========================================================
+        # APPROVE WITHDRAWAL
+        # ==========================================================
         if action_type == 'approve':
-            paychangu = PayChanguService()
-            payout_response = (
-                paychangu.send_mobile_payout(withdrawal)
-                if withdrawal.payout_method == 'mobile_money'
-                else paychangu.send_bank_payout(withdrawal)
-            )
+            try:
+                paychangu = PayChanguService()
 
-            payout_status = str(payout_response.get('status', '')).lower()
-            payout_message = payout_response.get('message', '')
+                # Send payout according to the selected payout method
+                if withdrawal.payout_method == 'mobile_money':
+                    payout_response = paychangu.send_mobile_payout(withdrawal)
+                else:
+                    payout_response = paychangu.send_bank_payout(withdrawal)
 
-            if payout_status in ['success', 'completed'] or 'successfully' in payout_message.lower():
-                withdrawal.status = 'approved'
-                withdrawal.processed_at = timezone.now()
-                withdrawal.save()
-                messages.success(request, f"Payout of MWK {withdrawal.amount} approved & sent successfully.")
-            else:
-                messages.error(request, f"PayChangu gateway failed: {payout_response.get('message', 'API Error')}")
-                return redirect('admin_app:admin_dashboard')
+                # Make sure we received a dictionary
+                if not isinstance(payout_response, dict):
+                    messages.error(
+                        request,
+                        "PayChangu returned an invalid response."
+                    )
+                    return redirect('admin_app:admin_dashboard')
 
-        elif action_type == 'reject':
-            with transaction.atomic():
-                # Refund funds back to user wallet
-                wallet = Wallet.objects.select_for_update().get(user=withdrawal.user)
-                wallet.balance += withdrawal.amount
-                wallet.total_withdrawn -= withdrawal.amount
-                wallet.save()
-                
-                withdrawal.status = 'rejected'
-                withdrawal.rejection_reason = "Rejected manually by administrator."
-                withdrawal.processed_at = timezone.now()
-                withdrawal.save()
+                # Safely extract payout status
+                payout_status = str(
+                    payout_response.get('status', '')
+                ).strip().lower()
 
-                WalletTransaction.objects.create(
-                    wallet=wallet,
-                    transaction_type='credit',
-                    source='withdrawal_refund',
-                    amount=withdrawal.amount,
-                    balance_before=wallet.balance - withdrawal.amount,
-                    balance_after=wallet.balance,
-                    reference=f"WD-REF-{withdrawal.id}",
-                    description=f"Refund for rejected withdrawal #{withdrawal.id}"
+                # Safely extract payout message
+                payout_message = payout_response.get(
+                    'message',
+                    'API Error'
                 )
-                
-            messages.warning(request, f"Payout #{withdrawal.id} rejected. Funds returned to user wallet.")
+
+                # A PayChangu message can sometimes be a dictionary
+                if isinstance(payout_message, dict):
+                    payout_message_display = json.dumps(
+                        payout_message,
+                        ensure_ascii=False
+                    )
+                else:
+                    payout_message_display = str(payout_message)
+
+                # --------------------------------------------------
+                # Only approve when the gateway confirms success
+                # --------------------------------------------------
+                if payout_status in ['success', 'completed']:
+                    withdrawal.status = 'approved'
+                    withdrawal.processed_at = timezone.now()
+                    withdrawal.save(
+                        update_fields=[
+                            'status',
+                            'processed_at'
+                        ]
+                    )
+
+                    messages.success(
+                        request,
+                        f"Payout of MWK {withdrawal.amount} "
+                        f"approved and sent successfully."
+                    )
+
+                else:
+                    # Gateway did not confirm successful payout
+                    messages.error(
+                        request,
+                        f"PayChangu gateway failed: "
+                        f"{payout_message_display}"
+                    )
+
+                    return redirect(
+                        'admin_app:admin_dashboard'
+                    )
+
+            except Exception as e:
+                # Prevent the admin page from crashing with a 500 error
+                messages.error(
+                    request,
+                    f"Unable to process payout: {str(e)}"
+                )
+
+                return redirect(
+                    'admin_app:admin_dashboard'
+                )
+
+        # ==========================================================
+        # REJECT WITHDRAWAL
+        # ==========================================================
+        elif action_type == 'reject':
+            try:
+                with transaction.atomic():
+
+                    # Lock the wallet while processing the refund
+                    wallet = Wallet.objects.select_for_update().get(
+                        user=withdrawal.user
+                    )
+
+                    # Store the balance before the refund
+                    balance_before = wallet.balance
+
+                    # Refund withdrawal amount
+                    wallet.balance += withdrawal.amount
+
+                    # Make sure total_withdrawn does not become negative
+                    wallet.total_withdrawn = max(
+                        wallet.total_withdrawn - withdrawal.amount,
+                        0
+                    )
+
+                    wallet.save(
+                        update_fields=[
+                            'balance',
+                            'total_withdrawn'
+                        ]
+                    )
+
+                    # Mark withdrawal as rejected
+                    withdrawal.status = 'rejected'
+                    withdrawal.rejection_reason = (
+                        "Rejected manually by administrator."
+                    )
+                    withdrawal.processed_at = timezone.now()
+
+                    withdrawal.save(
+                        update_fields=[
+                            'status',
+                            'rejection_reason',
+                            'processed_at'
+                        ]
+                    )
+
+                    # Record the refunded amount in wallet transactions
+                    WalletTransaction.objects.create(
+                        wallet=wallet,
+                        transaction_type='credit',
+                        source='withdrawal_refund',
+                        amount=withdrawal.amount,
+                        balance_before=balance_before,
+                        balance_after=wallet.balance,
+                        reference=f"WD-REF-{withdrawal.id}",
+                        description=(
+                            f"Refund for rejected withdrawal "
+                            f"#{withdrawal.id}"
+                        )
+                    )
+
+                messages.warning(
+                    request,
+                    f"Payout #{withdrawal.id} rejected. "
+                    f"Funds returned to the user's wallet."
+                )
+
+            except Wallet.DoesNotExist:
+                messages.error(
+                    request,
+                    "The user's wallet could not be found. "
+                    "The withdrawal was not rejected."
+                )
+
+            except Exception as e:
+                messages.error(
+                    request,
+                    f"Unable to reject withdrawal: {str(e)}"
+                )
+
+        # ==========================================================
+        # INVALID ACTION
+        # ==========================================================
+        else:
+            messages.error(
+                request,
+                "Invalid withdrawal action."
+            )
 
         return redirect('admin_app:admin_dashboard')
 
