@@ -509,11 +509,11 @@
                                         <td class="p-4 text-right pr-6">
                                             {% if withdrawal.status == 'pending' %}
                                             <div class="flex items-center justify-end gap-2">
-                                                <form action="{% url 'process_withdrawal' withdrawal.pk 'approve' %}" method="POST">
+                                                <form action="{% url 'admin_app:process_withdrawal' withdrawal.pk 'approve' %}" method="POST">
                                                     {% csrf_token %}
                                                     <button type="submit" class="bg-brand-green-600 hover:bg-brand-green-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-all">Approve</button>
                                                 </form>
-                                                <form action="{% url 'process_withdrawal' withdrawal.pk 'reject' %}" method="POST">
+                                                <form action="{% url 'admin_app:process_withdrawal' withdrawal.pk 'reject' %}" method="POST">
                                                     {% csrf_token %}
                                                     <button type="submit" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium text-xs px-3 py-1.5 rounded-lg transition-all">Reject</button>
                                                 </form>
