@@ -1,9 +1,28 @@
 from django.contrib import admin
-from .models import Payment, PaymentWebhook,EscrowWallet
+from .models import Payment, PaymentWebhook,EscrowWallet,CommissionRate
 
 
 admin.site.register(EscrowWallet)
 
+
+@admin.register(CommissionRate)
+class CommissionRateAdmin(admin.ModelAdmin):
+    list_display = (
+        '__str__',
+        'order_commission',
+        'booking_commission',
+        'property_unlock_commission',
+        'tickets_commission',
+        'updated_at'
+    )
+
+    def has_add_permission(self, request):
+        # Prevent creating multiple global configuration instances
+        return not CommissionRate.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # Prevent deleting the primary global settings record
+        return False
 
 @admin.register(Payment)
 class PaymentAdmin(admin.ModelAdmin):

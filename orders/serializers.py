@@ -27,9 +27,9 @@ class SellerOrderSerializer(serializers.ModelSerializer):
             "id",
             "order",
             "seller",
-            "shop_id",        # 🔑 Explicit shop ID for Flutter deep-linking
-            "shop_name",      # 🔑 Storefront name shown in customer interface
-            "shop_logo",      # 🔑 Store avatar URL
+            "shop_id",       
+            "shop_name",    
+            "shop_logo",   
             "subtotal",
             "customer_paid",
             "escrow_status",

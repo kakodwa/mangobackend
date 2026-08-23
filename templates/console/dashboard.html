@@ -152,8 +152,8 @@
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Company Earnings</p>
-                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">MWK {{ company_wallet.total_earnings|default:"0.00"|floatformat:2 }}</h3>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Net Company Profit</p>
+                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">MWK {{ company_wallet.balance|default:"0.00"|floatformat:2 }}</h3>
                             </div>
                         </div>
 
@@ -162,8 +162,8 @@
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Marketplace Orders</p>
-                                <h3 class="text-2xl font-bold mt-1 text-gray-900 dark:text-white">{{ total_orders }}</h3>
+                                <p class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Vault Payout Buffer</p>
+                                <h3 class="text-2xl font-bold mt-1 text-brand-orange-500">MWK {{ company_wallet.vault_processing_buffer|default:"0.00"|floatformat:2 }}</h3>
                             </div>
                         </div>
 
@@ -434,17 +434,17 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="bg-gradient-to-br from-brand-green-600 to-brand-green-700 text-white p-6 rounded-2xl shadow-xl shadow-brand-green-600/10 space-y-6">
                             <div>
-                                <p class="text-xs text-brand-green-100 font-bold uppercase tracking-wider">Main Corporate Vault Balance</p>
+                                <p class="text-xs text-brand-green-100 font-bold uppercase tracking-wider">Net Platform Profit</p>
                                 <h3 class="text-3xl font-extrabold mt-1">MWK {{ company_wallet.balance|default:"0.00"|floatformat:2 }}</h3>
                             </div>
                             <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/20 text-xs">
                                 <div>
-                                    <p class="text-brand-green-100 font-medium">Accumulated Earnings</p>
-                                    <p class="text-base font-bold mt-0.5">MWK {{ company_wallet.total_earnings|default:"0.00"|floatformat:2 }}</p>
+                                    <p class="text-brand-green-100 font-medium">Payout Reserve Buffer</p>
+                                    <p class="text-base font-bold mt-0.5">MWK {{ company_wallet.vault_processing_buffer|default:"0.00"|floatformat:2 }}</p>
                                 </div>
                                 <div>
-                                    <p class="text-brand-green-100 font-medium">Last Node Sync</p>
-                                    <p class="text-base font-bold mt-0.5">Just Now</p>
+                                    <p class="text-brand-green-100 font-medium">Total Fees Paid</p>
+                                    <p class="text-base font-bold mt-0.5">MWK {{ company_wallet.total_gateway_fees_paid|default:"0.00"|floatformat:2 }}</p>
                                 </div>
                             </div>
                         </div>
@@ -509,8 +509,9 @@
                                         <td class="p-4 text-right pr-6">
                                             {% if withdrawal.status == 'pending' %}
                                             <div class="flex items-center justify-end gap-2">
-                                                <form action="{% url 'admin_app:process_withdrawal' withdrawal.pk 'approve' %}" method="POST">
+                                                <form action="{% url 'admin_app:process_withdrawal' withdrawal.pk 'approve' %}" method="POST" class="flex items-center gap-1">
                                                     {% csrf_token %}
+                                                    <input type="password" name="admin_password" placeholder="Passphrase" required class="px-2 py-1 text-xs border rounded-lg dark:bg-gray-700 dark:border-gray-600 outline-none w-28 text-gray-900 dark:text-white">
                                                     <button type="submit" class="bg-brand-green-600 hover:bg-brand-green-700 text-white font-medium text-xs px-3 py-1.5 rounded-lg transition-all">Approve</button>
                                                 </form>
                                                 <form action="{% url 'admin_app:process_withdrawal' withdrawal.pk 'reject' %}" method="POST">

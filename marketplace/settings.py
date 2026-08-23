@@ -149,16 +149,27 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 # ==============================================================
 
 
-# Django REST Framework
+# Django REST Framework Configuration
 REST_FRAMEWORK = {
+    # 1. Authentication & Permissions
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.AllowAny',
     ),
+    
+    # 2. Pagination
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 10,
+    
+    # 3. Security Throttling & Rate Limiting
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'withdrawals': '3/hour',  # Maximum 3 cashout requests per hour per user
+    }
 }
 
 # CORS Settings

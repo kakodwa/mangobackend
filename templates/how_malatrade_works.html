@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How MalaTrade Works - Guide</title>
+    <style>
+        :root {
+            --primary: #008751;
+            --primary-dark: #005c37;
+            --secondary: #e03c31;
+            --dark: #1f2937;
+            --light: #f9fafb;
+            --gray: #6b7280;
+            --border: #e5e7eb;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        /* Layout & Grid Architecture */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        header {
+            background: white;
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-img {
+            height: 45px;
+            width: auto;
+            display: block;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1.25rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .hero {
+            background: linear-gradient(135deg, #008751 0%, #005c37 100%);
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+
+        .hero h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        .hero p { font-size: 1.2rem; opacity: 0.9; }
+
+        .summary-flow {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        @media(min-width: 768px) {
+            .summary-flow { grid-template-columns: 1fr 1fr; }
+        }
+
+        .flow-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .guide-section {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin: 3rem 0;
+            align-items: center;
+        }
+
+        @media(min-width: 900px) {
+            .guide-section { grid-template-columns: 1fr 1fr; }
+            .guide-section.reverse { direction: rtl; }
+            .guide-section.reverse .content { direction: ltr; }
+        }
+
+        .step-number {
+            background: var(--primary);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+
+        .payment-methods {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .badge {
+            background: #e5e7eb;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+
+        /* Image Placeholder System */
+        .img-placeholder {
+            background: #e2e8f0;
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            min-height: 250px;
+        }
+
+        .img-placeholder::after {
+            content: 'Desktop View Component';
+            display: block;
+            font-size: 0.85rem;
+            color: var(--gray);
+            margin-top: 0.5rem;
+        }
+
+        .img-placeholder.mobile-frame {
+            max-width: 280px;
+            height: 480px;
+            margin: 0 auto;
+            border: 12px solid #1f2937;
+            border-radius: 36px;
+            background: #f8fafc;
+        }
+
+        .img-placeholder.mobile-frame::after {
+            content: 'Mobile App View Screen';
+        }
+
+        .img-placeholder-label {
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 2.5rem 0;
+            text-align: center;
+            margin-top: 4rem;
+        }
+
+        .footer-logo {
+            height: 40px;
+            width: auto;
+            margin-bottom: 1rem;
+            filter: brightness(0) invert(1);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-wrapper">
+            <a href="#">
+                <img src="https://www.malatrade.com/media/logo34.png" alt="MalaTrade Logo" class="logo-img">
+            </a>
+            <a href="https://www.malatrade.com/" class="btn">Create Shop</a>
+        </div>
+    </header>
+
+    <div class="hero">
+        <div class="container">
+            <h1>How MalaTrade Works</h1>
+            <p>MalaTrade makes it easy to shop, sell, and connect in Malawi.</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Quick Overview -->
+        <div class="summary-flow">
+            <div class="flow-card">
+                <h3>For Buyers</h3>
+                <p>Create Account → Browse Products → Add to Cart → Checkout → Pay → Receive Your Order → Confirm Delivery</p>
+            </div>
+            <div class="flow-card">
+                <h3>For Sellers</h3>
+                <p>Create Account → Create Shop → Get Verified → Add Products → Receive Orders → Deliver Products → Get Paid → Withdraw Earnings</p>
+            </div>
+        </div>
+
+        <!-- Step 1: Account Creation -->
+        <div class="guide-section">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">1</span> Create Your MalaTrade Account</h2>
+                <p>Creating a MalaTrade account is completely free. Get started in four simple steps:</p>
+                <ol type="1" style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li>Click <strong>Login</strong></li>
+                    <li>Click <strong>Register</strong></li>
+                    <li>Fill in the registration form</li>
+                    <li>Click <strong>Submit</strong></li>
+                </ol>
+                <div class="info-box">
+                    <strong>Important:</strong> You do not need to create a shop to buy products. A regular MalaTrade account is enough to start shopping immediately.
+                </div>
+            </div>
+            <div class="media">
+                <div class="img-placeholder mobile-frame">
+                    <span class="img-placeholder-label">[IMAGE: Registration & Login Screen]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2 & 3: Selling Setup -->
+        <div class="guide-section reverse">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">2</span> Create Your Shop & Add Products</h2>
+                <p>If you want to sell, open your store in two easy ways:</p>
+                <div class="card">
+                    <h4>Option 1: From Top Navigation</h4>
+                    <p>Click the <strong>Create Shop</strong> button on the header after logging in.</p>
+                    <h4 style="margin-top:0.5rem;">Option 2: From Profile</h4>
+                    <p>Go to <strong>Profile → Shop Management → Create Shop</strong>.</p>
+                </div>
+                <p style="margin-top: 1rem;">Once verified by MalaTrade, navigate to <strong>Add Products</strong> to set up item descriptions, prices, images, and variations (e.g., shoe sizes).</p>
+            </div>
+            <div class="media">
+                <div class="img-placeholder">
+                    <span class="img-placeholder-label">[IMAGE: Seller Dashboard & Add Product Interface]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 4, 5, & 6: Buying Flow -->
+        <div class="guide-section">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">3</span> Browse, Select & Checkout</h2>
+                <p>Buying requires no shop account. Browse items via categories, choose desired variations (e.g., Size 7–10), and add them to your cart.</p>
+                <p style="margin-top: 0.5rem;"><strong>Entering Delivery Details:</strong> At checkout, input your name, phone number, physical address, and <strong>GPS Location</strong> to pinpoint your exact location for courier/rider delivery.</p>
+            </div>
+            <div class="media">
+                <div class="img-placeholder mobile-frame">
+                    <span class="img-placeholder-label">[IMAGE: Cart & GPS Delivery Address Screen]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 7: Payment Systems -->
+        <div class="guide-section reverse">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">4</span> Secure Payment</h2>
+                <p>All transactions are powered securely by <strong>PayChangu</strong>.</p>
+                <div class="card">
+                    <h4>Supported Payment Options:</h4>
+                    <div class="payment-methods">
+                        <span class="badge">Airtel Money</span>
+                        <span class="badge">TNM Mpamba</span>
+                        <span class="badge">Visa / Mastercard</span>
+                    </div>
+                    <p style="margin-top: 0.75rem; font-size: 0.9rem; color: var(--gray);">
+                        For mobile money, enter your details and confirm the PIN prompt on your phone. Card payments securely redirect to the PayChangu payment gateway.
+                    </p>
+                </div>
+            </div>
+            <div class="media">
+                <div class="img-placeholder">
+                    <span class="img-placeholder-label">[IMAGE: PayChangu Checkout Portal Interface]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 8, 9, 10, & 12: Escrow Protection & Confirmation -->
+        <div class="guide-section">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">5</span> Order Tracking & Escrow Delivery</h2>
+                <p>Track status under <strong>Profile → My Activity → Orders</strong> (Statuses: <em>Order Placed, Processing, Ready, In Transit, Delivered</em>).</p>
+                
+                <div class="card" style="border-left: 4px solid var(--primary);">
+                    <h4>How Escrow Protects You:</h4>
+                    <p>When you pay, MalaTrade holds funds safely. Payments are only released to the seller after you provide your unique **Delivery Confirmation Code** to the delivery agent upon receiving your items.</p>
+                    <p style="font-size: 0.85rem; color: var(--gray); margin-top: 0.5rem;">Note: If items are received without manually providing the code, funds release automatically after 2 days per protocol.</p>
+                </div>
+            </div>
+            <div class="media">
+                <div class="img-placeholder mobile-frame">
+                    <span class="img-placeholder-label">[IMAGE: Delivery Confirmation Code Verification Screen]</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 11 & 13: Seller Earnings & Delivery Management -->
+        <div class="guide-section reverse">
+            <div class="content">
+                <h2 class="step-title"><span class="step-number">6</span> Seller Fulfillments & Withdrawals</h2>
+                <p>Sellers handle orders from <strong>Profile → Shop Management → Orders & Deliveries</strong>. Using their seller delivery code, customer delivery details and navigation routes become accessible to complete delivery.</p>
+                <p style="margin-top: 1rem;">Once confirmed, earnings are deposited to your wallet. Request payouts anytime under <strong>Profile → Payments & Wallet → Withdraw Money</strong>.</p>
+            </div>
+            <div class="media">
+                <div class="img-placeholder">
+                    <span class="img-placeholder-label">[IMAGE: Seller Wallet & Withdrawal Screen]</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <img src="https://www.malatrade.com/media/logo34.png" alt="MalaTrade Logo" class="footer-logo">
+            <p><strong>Shop. Sell. Buy. Connect.</strong></p>
+            <p>MalaTrade — A better way to shop, sell and connect in Malawi.</p>
+        </div>
+    </footer>
+
+</body>
+</html>

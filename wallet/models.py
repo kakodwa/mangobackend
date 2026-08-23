@@ -1,28 +1,93 @@
 from django.db import models
 from users.models import User
 from decimal import Decimal
-
+from payments.models import EscrowWallet
 
 
 class CompanyWallet(models.Model):
     name = models.CharField(max_length=100, default="Main Company Wallet")
 
+    # 1. NET PLATFORM PROFIT (Your touchable earnings)
     balance = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=Decimal("0.00")
+        default=Decimal("0.00"),
+        help_text="Net company profit available after reserving payout fees"
     )
 
+    # 2. UNIFIED PAYOUT BUFFER (Reserves 2% + MWK 700 per sale for vendor cashouts)
+    vault_processing_buffer = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Reserved pool to cover PayChangu payout transaction fees"
+    )
+
+    # 3. GROSS COMMISSIONS COLLECTED (Total revenue captured before split)
     total_earnings = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        default=Decimal("0.00")
+        default=Decimal("0.00"),
+        help_text="Gross commission earnings collected across all sales"
+    )
+
+    # 4. ACTUAL FEES PAID TO PAYCHANGU (Audit log of payout fees charged)
+    total_gateway_fees_paid = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="Total payout processing fees charged by PayChangu"
     )
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    def credit_commission(self, gross_commission_amount, percentage=Decimal("2.00"), fixed_fee=Decimal("700.00")):
+        """
+        Splits gross transaction commission into:
+        1. Unified Reserve Buffer = (Gross * 2%) + MWK 700
+        2. Net Company Profit = Gross - Buffer
+        """
+        gross = Decimal(str(gross_commission_amount))
+        
+        # Calculate unified reserve: 2% of commission + MWK 700
+        payout_reserve = (gross * (percentage / Decimal("100"))) + fixed_fee
+        
+        # If gross commission is smaller than MWK 700, prevent negative profit
+        payout_reserve = min(payout_reserve, gross)
+        net_profit = gross - payout_reserve
+
+        self.total_earnings += gross
+        self.vault_processing_buffer += payout_reserve
+        self.balance += net_profit
+
+        self.save(update_fields=[
+            'balance', 
+            'vault_processing_buffer', 
+            'total_earnings', 
+            'updated_at'
+        ])
+
+    def record_payout_gateway_fee(self, fee_amount):
+        """
+        Deducts PayChangu's actual payout charge from the reserved buffer.
+        """
+        fee = Decimal(str(fee_amount))
+        self.vault_processing_buffer -= fee
+        self.total_gateway_fees_paid += fee
+        self.save(update_fields=[
+            'vault_processing_buffer', 
+            'total_gateway_fees_paid', 
+            'updated_at'
+        ])
+
     def __str__(self):
-        return self.name
+        return (
+            f"{self.name} | Net Profit: MWK {self.balance} | "
+            f"Payout Buffer: MWK {self.vault_processing_buffer} | "
+            f"Gross Earned: MWK {self.total_earnings}"
+        )
+
+
 
 class Wallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='wallet')
@@ -38,8 +103,30 @@ class Wallet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def escrow_balance(self):
+        """
+        Calculates total net escrow funds currently 'held' for this seller.
+        Subtracts the escrow commission rate from held amounts.
+        """
+        
+        held_escrows = EscrowWallet.objects.filter(
+            beneficiary=self.user,
+            status='held'
+        )
+        
+        total_escrow = Decimal("0.00")
+        for escrow in held_escrows:
+            if escrow.amount:
+                rate = escrow.commission_rate or Decimal("0.00")
+                commission = (escrow.amount * rate) / Decimal("100")
+                net_amount = escrow.amount - commission
+                total_escrow += net_amount
+                
+        return total_escrow
+
     def __str__(self):
-        return f"Wallet - {self.user.username} (Balance: {self.balance})"
+        return f"Wallet - {self.user.username} (Balance: {self.balance} | Escrow: {self.escrow_balance})"
 
 
 

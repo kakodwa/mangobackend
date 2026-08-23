@@ -11,6 +11,7 @@ from wallet.models import (
     WalletTransaction,
     CompanyWalletTransaction
 )
+from .models import CommissionRate
 from events.models import EventTicketType
 
 
@@ -53,7 +54,9 @@ def handle_order(payment, company_wallet):
             delivery_code=generate_code()
         )
 
-        commission_rate = Decimal("10.00")
+        # Pull global admin-configured commission rate
+        global_rates = CommissionRate.get_rates()
+        commission_rate = global_rates.order_commission
 
         seller_totals = defaultdict(Decimal)
 
@@ -98,9 +101,8 @@ def handle_order(payment, company_wallet):
 
         company_before = company_wallet.balance
 
-        company_wallet.balance += company_total_commission
-        company_wallet.total_earnings += company_total_commission
-        company_wallet.save()
+        # Auto-splits commission between Vault Reserve Buffer and Net Profit
+        company_wallet.credit_commission(gross_commission_amount=company_total_commission)
 
         CompanyWalletTransaction.objects.create(
             wallet=company_wallet,
@@ -133,7 +135,9 @@ def handle_property_unlock(payment, company_wallet):
             user=owner
         )
 
-        commission_rate = Decimal("15.00")
+        # Pull global admin-configured commission rate
+        global_rates = CommissionRate.get_rates()
+        commission_rate = global_rates.property_unlock_commission
 
         owner_amount = payment.amount * (
             Decimal("1") - (commission_rate / Decimal("100"))
@@ -163,9 +167,8 @@ def handle_property_unlock(payment, company_wallet):
 
         company_before = company_wallet.balance
 
-        company_wallet.balance += company_amount
-        company_wallet.total_earnings += company_amount
-        company_wallet.save()
+        # Auto-splits commission between Vault Reserve Buffer and Net Profit
+        company_wallet.credit_commission(gross_commission_amount=company_amount)
 
         CompanyWalletTransaction.objects.create(
             wallet=company_wallet,
@@ -203,7 +206,9 @@ def handle_booking(payment, company_wallet):
 
         owner_wallet, _ = Wallet.objects.get_or_create(user=owner)
 
-        commission_rate = Decimal("10.00")
+        # Pull global admin-configured commission rate
+        global_rates = CommissionRate.get_rates()
+        commission_rate = global_rates.booking_commission
 
         owner_amount = payment.amount * (
             Decimal("1") - (commission_rate / Decimal("100"))
@@ -233,9 +238,8 @@ def handle_booking(payment, company_wallet):
 
         company_before = company_wallet.balance
 
-        company_wallet.balance += company_amount
-        company_wallet.total_earnings += company_amount
-        company_wallet.save()
+        # Auto-splits commission between Vault Reserve Buffer and Net Profit
+        company_wallet.credit_commission(gross_commission_amount=company_amount)
 
         CompanyWalletTransaction.objects.create(
             wallet=company_wallet,
@@ -293,7 +297,9 @@ def handle_ticket(payment, company_wallet):
             user=organizer
         )
 
-        commission_rate = Decimal("10.00")
+        # Pull global admin-configured commission rate
+        global_rates = CommissionRate.get_rates()
+        commission_rate = global_rates.tickets_commission
 
         organizer_amount = payment.amount * (
             Decimal("1") - (commission_rate / Decimal("100"))
@@ -323,9 +329,8 @@ def handle_ticket(payment, company_wallet):
 
         company_before = company_wallet.balance
 
-        company_wallet.balance += company_amount
-        company_wallet.total_earnings += company_amount
-        company_wallet.save()
+        # Auto-splits commission between Vault Reserve Buffer and Net Profit
+        company_wallet.credit_commission(gross_commission_amount=company_amount)
 
         CompanyWalletTransaction.objects.create(
             wallet=company_wallet,

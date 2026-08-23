@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fa; margin: 0; padding: 20px; }
+        .container { max-width: 600px; background: #ffffff; border-radius: 10px; margin: 0 auto; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .header { background-color: #008751; padding: 25px; text-align: center; color: #ffffff; }
+        .header img { height: 40px; width: auto; }
+        .content { padding: 30px; color: #333333; line-height: 1.6; }
+        .greeting { font-size: 18px; font-weight: 600; color: #222222; }
+        .steps-box { background-color: #f1f5f9; border-left: 4px solid #008751; padding: 15px 20px; margin: 20px 0; border-radius: 4px; }
+        .steps-box ol { margin: 0; padding-left: 20px; }
+        .steps-box li { margin-bottom: 8px; font-weight: 500; }
+        .notice-box { background-color: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 12px 15px; border-radius: 6px; font-size: 14px; margin-bottom: 20px; }
+        .learn-more { background-color: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 6px; padding: 15px; margin: 20px 0; text-align: center; }
+        .learn-more p { margin: 0 0 8px 0; font-size: 14px; color: #2e7d32; font-weight: 600; }
+        .learn-more a { color: #008751; text-decoration: underline; font-weight: bold; font-size: 14px; }
+        .cta-container { text-align: center; margin: 25px 0 10px 0; }
+        .btn { display: inline-block; padding: 12px 28px; background-color: #008751; color: #ffffff !important; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; }
+        .footer { font-size: 12px; color: #888888; text-align: center; padding: 20px; background-color: #f8f9fa; border-top: 1px solid #eeeeee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="https://www.malatrade.com/media/logo34.png" alt="MalaTrade">
+        </div>
+        <div class="content">
+            <p class="greeting">Hello {{ user.first_name|default:"Partner" }},</p>
+            
+            <p>You can already shop and buy products on <strong>MalaTrade</strong> with your account! However, did you know you can also start selling your own products for free?</p>
+            
+            {% if not has_shop %}
+                <div class="notice-box">
+                    <strong>Note:</strong> While your account allows you to buy items anytime, you must open a shop before you can list products for sale.
+                </div>
+            {% endif %}
+
+            <p>Start selling to buyers in a few simple steps:</p>
+
+            <div class="steps-box">
+                <ol>
+                    {% if not has_shop %}
+                        <li><strong>Create your shop</strong> on MalaTrade (it takes less than 2 minutes).</li>
+                        <li><strong>Add your products for FREE</strong> with pictures and prices once verified.</li>
+                    {% else %}
+                        <li><strong>Add your products for FREE</strong> with pictures and prices.</li>
+                    {% endif %}
+                    <li><strong>Start connecting</strong> with buyers directly!</li>
+                </ol>
+            </div>
+
+            <div class="learn-more">
+                <p>Want to see how shopping, selling, and delivery work?</p>
+                <a href="https://www.malatrade.com/how-it-works/">Click here to learn how MalaTrade works</a>
+            </div>
+
+            <div class="cta-container">
+                {% if not has_shop %}
+                    <a href="https://www.malatrade.com/" class="btn">Create Your Free Shop Now</a>
+                {% else %}
+                    <a href="https://www.malatrade.com/" class="btn">Post Products Now</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>You received this email because you registered on MalaTrade.com.</p>
+        </div>
+    </div>
+</body>
+</html>

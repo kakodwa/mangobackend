@@ -24,10 +24,9 @@ class SettlementService:
             user=escrow.beneficiary
         )
 
-
         company_wallet, _ = CompanyWallet.objects.get_or_create(
             name="Main Company Wallet"
-            )
+        )
 
         # =========================
         # CALCULATIONS
@@ -61,9 +60,8 @@ class SettlementService:
         # =========================
         before_company = company_wallet.balance
 
-        company_wallet.balance += commission
-        company_wallet.total_earnings += commission
-        company_wallet.save()
+        # Auto-splits commission between Vault Reserve Buffer and Net Company Profit
+        company_wallet.credit_commission(gross_commission_amount=commission)
 
         CompanyWalletTransaction.objects.create(
             wallet=company_wallet,

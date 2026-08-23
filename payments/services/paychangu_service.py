@@ -1,6 +1,12 @@
 import time
 import requests
+import logging
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+# Connection Timeouts: (Connect Timeout: 5s, Read Timeout: 15s)
+HTTP_TIMEOUT = (5, 15)
 
 
 class PayChanguService:
@@ -72,53 +78,77 @@ class PayChanguService:
     # PAYMENT COLLECTIONS
     # =========================
     def initiate_mobile_money(self, payment, phone_number):
-        phone_data = self._normalize_phone(phone_number)
+        try:
+            phone_data = self._normalize_phone(phone_number)
 
-        payload = {
-            "amount": float(payment.amount),
-            "currency": "MWK",
-            "mobile": phone_data["phone"],
-            "mobile_money_operator_ref_id": phone_data["operator_id"],
-            "charge_id": payment.payment_reference,
-            "email": payment.user.email,
-        }
+            payload = {
+                "amount": float(payment.amount),
+                "currency": "MWK",
+                "mobile": phone_data["phone"],
+                "mobile_money_operator_ref_id": phone_data["operator_id"],
+                "charge_id": payment.payment_reference,
+                "email": payment.user.email,
+            }
 
-        response = requests.post(
-            self.BASE_MOBILE_URL,
-            json=payload,
-            headers=self._headers()
-        )
+            response = requests.post(
+                self.BASE_MOBILE_URL,
+                json=payload,
+                headers=self._headers(),
+                timeout=HTTP_TIMEOUT
+            )
 
-        return self._handle_response(response)
+            return self._handle_response(response)
+        except requests.exceptions.Timeout:
+            logger.error(f"[PAYCHANGU TIMEOUT] Mobile collection payment {payment.payment_reference} timed out.")
+            return {"success": False, "error": "PayChangu collection timed out."}
+        except Exception as e:
+            logger.error(f"[PAYCHANGU ERROR] Mobile collection error: {str(e)}")
+            return {"success": False, "error": str(e)}
 
     def initiate_card_payment(self, payment, redirect_url=None):
-        payload = {
-            "public_key": getattr(settings, 'PAYCHANGU_PUBLIC_KEY', 'PUB-TEST-WW4IESP3O5ngh9whOMlCEqz18Pos4wl2'),
-            "amount": float(payment.amount),
-            "currency": "MWK",
-            "email": payment.user.email,
-            "tx_ref": payment.payment_reference,
-            "callback_url": redirect_url,
-            "return_url": redirect_url,
-        }
+        try:
+            payload = {
+                "public_key": getattr(settings, 'PAYCHANGU_PUBLIC_KEY', 'PUB-TEST-WW4IESP3O5ngh9whOMlCEqz18Pos4wl2'),
+                "amount": float(payment.amount),
+                "currency": "MWK",
+                "email": payment.user.email,
+                "tx_ref": payment.payment_reference,
+                "callback_url": redirect_url,
+                "return_url": redirect_url,
+            }
 
-        response = requests.post(
-            self.BASE_CARD_URL,
-            json=payload,
-            headers=self._headers()
-        )
+            response = requests.post(
+                self.BASE_CARD_URL,
+                json=payload,
+                headers=self._headers(),
+                timeout=HTTP_TIMEOUT
+            )
 
-        return self._handle_response(response)
+            return self._handle_response(response)
+        except requests.exceptions.Timeout:
+            logger.error(f"[PAYCHANGU TIMEOUT] Card collection payment {payment.payment_reference} timed out.")
+            return {"success": False, "error": "PayChangu card page initialization timed out."}
+        except Exception as e:
+            logger.error(f"[PAYCHANGU ERROR] Card payment error: {str(e)}")
+            return {"success": False, "error": str(e)}
 
     def verify_payment(self, charge_id):
-        url = f"https://api.paychangu.com/mobile-money/payments/{charge_id}/verify"
+        try:
+            url = f"https://api.paychangu.com/mobile-money/payments/{charge_id}/verify"
 
-        response = requests.get(
-            url,
-            headers=self._headers()
-        )
+            response = requests.get(
+                url,
+                headers=self._headers(),
+                timeout=HTTP_TIMEOUT
+            )
 
-        return self._handle_response(response)
+            return self._handle_response(response)
+        except requests.exceptions.Timeout:
+            logger.error(f"[PAYCHANGU TIMEOUT] Verification for charge {charge_id} timed out.")
+            return {"success": False, "error": "Payment verification timed out."}
+        except Exception as e:
+            logger.error(f"[PAYCHANGU ERROR] Verification error: {str(e)}")
+            return {"success": False, "error": str(e)}
 
     def _handle_response(self, response):
         try:
@@ -143,11 +173,12 @@ class PayChanguService:
         }
 
     # =========================
-    # PAYOUT ROUTINES (FIXED UNIQUE CHARGE_ID)
+    # PAYOUT ROUTINES
     # =========================
     def send_mobile_payout(self, withdrawal):
         """
         Executes a Mobile Money Payout via PayChangu API.
+        Enforces (5, 15) connection timeouts.
         """
         try:
             phone_data = self._normalize_phone(withdrawal.account_number)
@@ -157,7 +188,6 @@ class PayChanguService:
             last_name = user.last_name if user.last_name else f"User{user.id}"
             email = user.email if user.email else "payouts@yourdomain.com"
 
-            # Appending unix timestamp ensures charge_id is unique even during retries
             unique_charge_id = f"WD-MOB-{withdrawal.id}-{int(time.time())}"
 
             payload = {
@@ -174,11 +204,24 @@ class PayChanguService:
                 self.BASE_MOBILE_PAYOUT_URL, 
                 json=payload, 
                 headers=self._headers(),
-                timeout=30
+                timeout=HTTP_TIMEOUT
             )
             
             return response.json()
+        except requests.exceptions.Timeout:
+            logger.error(f"[PAYCHANGU TIMEOUT] Mobile payout for withdrawal #{withdrawal.id} timed out.")
+            return {
+                "status": "failed",
+                "message": "PayChangu gateway connection timed out. Request queued for admin review."
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"[PAYCHANGU REQUEST ERROR] Mobile payout for withdrawal #{withdrawal.id} failed: {str(e)}")
+            return {
+                "status": "failed",
+                "message": f"PayChangu connection error: {str(e)}"
+            }
         except Exception as e:
+            logger.error(f"[PAYCHANGU EXCEPTION] Unexpected error during mobile payout for withdrawal #{withdrawal.id}: {str(e)}")
             return {
                 "status": "failed",
                 "message": f"Service Exception: {str(e)}"
@@ -187,12 +230,12 @@ class PayChanguService:
     def send_bank_payout(self, withdrawal):
         """
         Executes a Bank Transfer Payout via PayChangu Direct Charge API.
+        Enforces (5, 15) connection timeouts.
         """
         try:
             user = withdrawal.user
             email = user.email if user.email else "payouts@yourdomain.com"
 
-            # Appending unix timestamp ensures charge_id is unique even during retries
             unique_charge_id = f"WD-BNK-{withdrawal.id}-{int(time.time())}"
 
             payload = {
@@ -204,16 +247,29 @@ class PayChanguService:
                 "bank_account_number": withdrawal.account_number,
                 "email": email,
             }
-            
+
             response = requests.post(
                 self.BASE_BANK_PAYOUT_URL, 
                 json=payload, 
                 headers=self._headers(),
-                timeout=30
+                timeout=HTTP_TIMEOUT
             )
             
             return response.json()
+        except requests.exceptions.Timeout:
+            logger.error(f"[PAYCHANGU TIMEOUT] Bank payout for withdrawal #{withdrawal.id} timed out.")
+            return {
+                "status": "failed",
+                "message": "PayChangu gateway connection timed out. Request queued for admin review."
+            }
+        except requests.exceptions.RequestException as e:
+            logger.error(f"[PAYCHANGU REQUEST ERROR] Bank payout for withdrawal #{withdrawal.id} failed: {str(e)}")
+            return {
+                "status": "failed",
+                "message": f"PayChangu connection error: {str(e)}"
+            }
         except Exception as e:
+            logger.error(f"[PAYCHANGU EXCEPTION] Unexpected error during bank payout for withdrawal #{withdrawal.id}: {str(e)}")
             return {
                 "status": "failed",
                 "message": f"Service Exception: {str(e)}"
