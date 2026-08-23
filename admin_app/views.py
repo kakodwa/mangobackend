@@ -15,8 +15,10 @@ from delivery.models import Delivery, DeliveryPerson, DeliveryRating
 from hospitality.models import Lodge, Room, Booking, Review as LodgeReview, Amenity
 from events.models import Event, EventTicketType, Ticket, TicketCheckIn
 from orders.models import Order
-from wallet.models import Withdrawal,CompanyWallet
 from payments.models import EscrowWallet
+
+from wallet.models import Wallet, WalletTransaction, Withdrawal,CompanyWallet
+from payments.services.paychangu_service import PayChanguService 
 
 from django.conf import settings
 
@@ -136,25 +138,59 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         return context
 
 class ProcessWithdrawalActionView(AdminRequiredMixin, View):
-    """
-    Action engine to process or drop pending withdrawal claims from the platform UI.
-    """
     def post(self, request, pk, action_type):
         withdrawal = get_object_or_404(Withdrawal, pk=pk)
         
         if withdrawal.status != 'pending':
-            messages.error(request, "This claim context has already been settled and closed.")
+            messages.error(request, "This claim has already been settled and closed.")
             return redirect('admin_app:admin_dashboard')
 
         if action_type == 'approve':
-            withdrawal.status = 'approved'
-            # Hook your system-wide PayChangu transfer routines right here if necessary
-            messages.success(request, f"Payout request for {withdrawal.account_holder_name} was approved.")
+            paychangu = PayChanguService()
+            payout_response = (
+                paychangu.send_mobile_payout(withdrawal)
+                if withdrawal.payout_method == 'mobile_money'
+                else paychangu.send_bank_payout(withdrawal)
+            )
+
+            payout_status = str(payout_response.get('status', '')).lower()
+            payout_message = payout_response.get('message', '')
+
+            if payout_status in ['success', 'completed'] or 'successfully' in payout_message.lower():
+                withdrawal.status = 'approved'
+                withdrawal.processed_at = timezone.now()
+                withdrawal.save()
+                messages.success(request, f"Payout of MWK {withdrawal.amount} approved & sent successfully.")
+            else:
+                messages.error(request, f"PayChangu gateway failed: {payout_response.get('message', 'API Error')}")
+                return redirect('admin_app:admin_dashboard')
+
         elif action_type == 'reject':
-            withdrawal.status = 'rejected'
-            messages.warning(request, "Payout request has been successfully rejected.")
-            
-        withdrawal.save()
+            with transaction.atomic():
+                # Refund funds back to user wallet
+                wallet = Wallet.objects.select_for_update().get(user=withdrawal.user)
+                wallet.balance += withdrawal.amount
+                wallet.total_withdrawn -= withdrawal.amount
+                wallet.save()
+                
+                withdrawal.status = 'rejected'
+                withdrawal.rejection_reason = "Rejected manually by administrator."
+                withdrawal.processed_at = timezone.now()
+                withdrawal.save()
+
+                WalletTransaction.objects.create(
+                    wallet=wallet,
+                    transaction_type='credit',
+                    source='withdrawal_refund',
+                    amount=withdrawal.amount,
+                    balance_before=wallet.balance - withdrawal.amount,
+                    balance_after=wallet.balance,
+                    reference=f"WD-REF-{withdrawal.id}",
+                    description=f"Refund for rejected withdrawal #{withdrawal.id}"
+                )
+                
+            messages.warning(request, f"Payout #{withdrawal.id} rejected. Funds returned to user wallet.")
+
         return redirect('admin_app:admin_dashboard')
 
 
