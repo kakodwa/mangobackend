@@ -6,6 +6,12 @@ from django.db.models import Q, Count
 import json
 from datetime import datetime, timedelta
 
+
+
+import os
+import sys
+
+
 # Models Import
 from users.models import User, Address
 from shops.models import Shop, ShopReview
@@ -144,22 +150,43 @@ class AdminDashboardView(AdminRequiredMixin, TemplateView):
         return context
 
 
+
+def log_debug(message):
+    """
+    Dual-logger: Writes directly to 'payout_debug.log' inside BASE_DIR
+    and flushes to sys.stderr for Phusion Passenger.
+    """
+    formatted_msg = f"[{timezone.now().strftime('%Y-%m-%d %H:%M:%S')}] {message}"
+    
+    # 1. Direct write to stderr (cPanel Passenger Error Log)
+    sys.stderr.write(f"{formatted_msg}\n")
+    sys.stderr.flush()
+
+    # 2. Direct write to file (Namecheap File Manager root)
+    try:
+        log_path = os.path.join(settings.BASE_DIR, 'payout_debug.log')
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(f"{formatted_msg}\n")
+    except Exception as e:
+        sys.stderr.write(f"Failed to write to file log: {str(e)}\n")
+
+
 class ProcessWithdrawalActionView(AdminRequiredMixin, View):
     def post(self, request, pk, action_type):
-        print(f"\n==========================================")
-        print(f"[DEBUG WITHDRAWAL] POST request received for PK: {pk}, Action: {action_type}")
-        print(f"==========================================\n")
+        log_debug(f"==========================================")
+        log_debug(f"[DEBUG WITHDRAWAL] POST request received for PK: {pk}, Action: {action_type}")
+        log_debug(f"==========================================")
 
         withdrawal = get_object_or_404(
             Withdrawal.objects.select_related('user'),
             pk=pk
         )
 
-        print(f"[DEBUG WITHDRAWAL] Withdrawal Details: User={withdrawal.user}, Amount={withdrawal.amount}, Status={withdrawal.status}, Method={withdrawal.payout_method}")
+        log_debug(f"[DEBUG WITHDRAWAL] Withdrawal Details: User={withdrawal.user}, Amount={withdrawal.amount}, Status={withdrawal.status}, Method={withdrawal.payout_method}")
 
         # Prevent processing a withdrawal that has already been handled
         if withdrawal.status != 'pending':
-            print(f"[DEBUG WITHDRAWAL] FAILED: Status is '{withdrawal.status}', not 'pending'.")
+            log_debug(f"[DEBUG WITHDRAWAL] FAILED: Status is '{withdrawal.status}', not 'pending'.")
             messages.error(
                 request,
                 f"This withdrawal has already been processed (Current Status: {withdrawal.status})."
@@ -171,20 +198,20 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
         # ==========================================================
         if action_type == 'approve':
             try:
-                print(f"[DEBUG WITHDRAWAL] Initializing PayChanguService...")
+                log_debug(f"[DEBUG WITHDRAWAL] Initializing PayChanguService...")
                 paychangu = PayChanguService()
 
                 if withdrawal.payout_method == 'mobile_money':
-                    print(f"[DEBUG WITHDRAWAL] Sending Mobile Money Payout...")
+                    log_debug(f"[DEBUG WITHDRAWAL] Sending Mobile Money Payout...")
                     payout_response = paychangu.send_mobile_payout(withdrawal)
                 else:
-                    print(f"[DEBUG WITHDRAWAL] Sending Bank Payout...")
+                    log_debug(f"[DEBUG WITHDRAWAL] Sending Bank Payout...")
                     payout_response = paychangu.send_bank_payout(withdrawal)
 
-                print(f"[DEBUG WITHDRAWAL] Raw PayChangu Response: {payout_response}")
+                log_debug(f"[DEBUG WITHDRAWAL] Raw PayChangu Response: {payout_response}")
 
                 if not isinstance(payout_response, dict):
-                    print(f"[DEBUG WITHDRAWAL] ERROR: Response is not a dictionary.")
+                    log_debug(f"[DEBUG WITHDRAWAL] ERROR: Response is not a dictionary.")
                     messages.error(request, "PayChangu returned an invalid response.")
                     return redirect('admin_app:admin_dashboard')
 
@@ -201,17 +228,17 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
                     withdrawal.processed_at = timezone.now()
                     withdrawal.save(update_fields=['status', 'processed_at'])
 
-                    print(f"[DEBUG WITHDRAWAL] SUCCESS: Payout approved for Withdrawal #{withdrawal.id}")
+                    log_debug(f"[DEBUG WITHDRAWAL] SUCCESS: Payout approved for Withdrawal #{withdrawal.id}")
                     messages.success(request, f"Payout of MWK {withdrawal.amount} approved and sent successfully.")
                 else:
-                    print(f"[DEBUG WITHDRAWAL] GATEWAY REJECTION: Status={payout_status}, Message={payout_message_display}")
+                    log_debug(f"[DEBUG WITHDRAWAL] GATEWAY REJECTION: Status={payout_status}, Message={payout_message_display}")
                     messages.error(request, f"PayChangu gateway failed: {payout_message_display}")
                     return redirect('admin_app:admin_dashboard')
 
             except Exception as e:
                 import traceback
-                print(f"[DEBUG WITHDRAWAL] EXCEPTION IN APPROVAL:")
-                traceback.print_exc()
+                log_debug(f"[DEBUG WITHDRAWAL] EXCEPTION IN APPROVAL: {str(e)}")
+                log_debug(traceback.format_exc())
                 messages.error(request, f"Unable to process payout: {str(e)}")
                 return redirect('admin_app:admin_dashboard')
 
@@ -220,6 +247,7 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
         # ==========================================================
         elif action_type == 'reject':
             try:
+                log_debug(f"[DEBUG WITHDRAWAL] Processing manual rejection for PK: {pk}...")
                 with transaction.atomic():
                     wallet = Wallet.objects.select_for_update().get(user=withdrawal.user)
                     balance_before = wallet.balance
@@ -243,20 +271,20 @@ class ProcessWithdrawalActionView(AdminRequiredMixin, View):
                         description=f"Refund for rejected withdrawal #{withdrawal.id}"
                     )
 
-                print(f"[DEBUG WITHDRAWAL] REJECTED: Withdrawal #{withdrawal.id} refunded successfully.")
+                log_debug(f"[DEBUG WITHDRAWAL] REJECTED: Withdrawal #{withdrawal.id} refunded successfully.")
                 messages.warning(request, f"Payout #{withdrawal.id} rejected. Funds returned to wallet.")
 
             except Exception as e:
                 import traceback
-                print(f"[DEBUG WITHDRAWAL] EXCEPTION IN REJECTION:")
-                traceback.print_exc()
+                log_debug(f"[DEBUG WITHDRAWAL] EXCEPTION IN REJECTION: {str(e)}")
+                log_debug(traceback.format_exc())
                 messages.error(request, f"Unable to reject withdrawal: {str(e)}")
 
         else:
+            log_debug(f"[DEBUG WITHDRAWAL] ERROR: Invalid action_type '{action_type}'")
             messages.error(request, "Invalid withdrawal action.")
 
         return redirect('admin_app:admin_dashboard')
-
 
 #______________________________________________________________________
 
