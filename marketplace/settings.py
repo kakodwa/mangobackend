@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'analytics',
     'admin_app',
     'mangohub',
+    'chat', 
 
     'cloudinary_storage',
     'cloudinary',
@@ -178,14 +179,24 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Channels Configuration
 ASGI_APPLICATION = 'marketplace.asgi.application'
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [(config('REDIS_HOST', default='localhost'), config('REDIS_PORT', default=6379, cast=int))],
+
+if DEBUG:
+    # Use InMemoryChannelLayer locally so Redis is not required
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
         },
-    },
-}
+    }
+else:
+    # Use Redis in production
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [(config('REDIS_HOST', default='localhost'), config('REDIS_PORT', default=6379, cast=int))],
+            },
+        },
+    }
 
 # JWT Settings
 SIMPLE_JWT = {

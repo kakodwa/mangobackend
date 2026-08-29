@@ -15,10 +15,11 @@ from events.views import EventViewSet, TicketViewSet, TicketValidationViewSet, T
 from delivery.views import DeliveryViewSet
 from realestate.views import PropertyViewSet
 from wallet.views import WalletViewSet
+from chat.views import ChatRoomViewSet  # 👈 Imported ChatRoomViewSet
 from django.conf import settings
 from django.conf.urls.static import static
 from mangohub import views
-from products.cj_views import ProductListView,ProductDetailView
+from products.cj_views import ProductListView, ProductDetailView
 from django.http import JsonResponse
 
 
@@ -41,6 +42,7 @@ router.register(r'events', EventViewSet, basename='events')
 router.register(r'tickets', TicketViewSet, basename='tickets')
 router.register(r'reviews', ReviewViewSet, basename='reviews')
 router.register(r'ticket-validation', TicketValidationViewSet, basename='ticket-validation')
+router.register(r'chat/rooms', ChatRoomViewSet, basename='chat-room') # 👈 Registered Chat Rooms in the main router
 
 
 # ===================================================================================
@@ -83,22 +85,42 @@ def serve_ios_apple_association(request):
     }
     return JsonResponse(data)
 
+
 urlpatterns = [
+    # =================================================================
+    # 📱 0. MOBILE APP LINK HANDLERS (Placed high up for instant discovery)
+    # =================================================================
     path('.well-known/assetlinks.json', serve_android_assetlinks),
     path('.well-known/apple-app-site-association', serve_ios_apple_association),
 
     path('admin/', admin.site.urls),
 
-    # Payment URLs
+    # =================================================================
+    # 🎯 1. HIGH-PRIORITY EXPLICIT PAYMENT VIEWS (Checked First)
+    # =================================================================
     path('api/payments/webhook/paychangu/', paychangu_webhook, name='paychangu_webhook'),
     path('api/payments/payment/return/', payment_return_view, name='payment_return_view'),
 
     path('payments/webhook/paychangu/', paychangu_webhook, name='paychangu_webhook_fallback'),
     path('payments/payment/return/', payment_return_view, name='payment_return_fallback'),
+    
 
-    # ==============================
-    # MALATRADE INFORMATION PAGES
-    # ==============================
+    # =================================================================
+    # 🔌 2. STANDARD FEATURE API ENDPOINTS
+    # =================================================================
+    path('api/analytics/', include('analytics.urls')),
+
+    path("api/cj/products/", ProductListView.as_view()),
+    path("api/cj/products/<str:pid>/", ProductDetailView.as_view()),
+
+    path('api/get-pending-sms/', get_pending_sms, name='get_pending_sms'),
+    path('api/mark-sms-sent/', mark_sms_sent, name='mark_sms_sent'),
+    
+    path('api/tickets/check-in/', TicketCheckInAPIView.as_view(), name='ticket-checkin'),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/password_reset/', include('django_rest_passwordreset.urls', namespace='password_reset')),
+    path("terms/", views.TermsAndConditionsView.as_view(), name="terms_and_conditions"),
     path(
         "how-it-works/",
         TemplateView.as_view(
@@ -106,37 +128,16 @@ urlpatterns = [
         ),
         name="how_it_works",
     ),
-
-    path(
-        "terms/",
-        views.TermsAndConditionsView.as_view(),
-        name="terms_and_conditions"
-    ),
-
-    path(
-        "privacy/",
-        views.PrivacyPolicyView.as_view(),
-        name="privacy_policy"
-    ),
-
-    # API
-    path('api/analytics/', include('analytics.urls')),
-    path("api/cj/products/", ProductListView.as_view()),
-    path("api/cj/products/<str:pid>/", ProductDetailView.as_view()),
-
-    # ...
-
+    path("privacy/", views.PrivacyPolicyView.as_view(), name="privacy_policy"),
+    path("api/feed/", include("feed_engine.urls")),
     path("admin_app", include("admin_app.urls")),
     path("", include("shops.urls")),
-
-    # ==============================
-    # FLUTTER CATCH-ALL — LAST
-    # ==============================
-    re_path(
-        r'^(?!api/|admin/|payments/|\.well-known/).*$', 
-        views.serve_flutter_web_app,
-        name='flutter_web_catchall'
-    ),
+    
+    # =================================================================
+    # 🗂️ 3. CATCH-ALL ROUTER INCLUDE (Checked Last)
+    # =================================================================
+    path('api/', include(router.urls)),
+    re_path(r'^(?!api/|admin/|payments/|\.well-known/).*$', views.serve_flutter_web_app, name='flutter_web_catchall'),
 ]
 
 if settings.DEBUG:
