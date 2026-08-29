@@ -48,6 +48,30 @@ class ChatRoomViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
+    def send_message(self, request, pk=None):
+        room = self.get_object()
+        text_content = request.data.get('text') or request.data.get('message')
+
+        if not text_content or not text_content.strip():
+            return Response(
+                {"detail": "Message text is required."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create and save message
+        message = ChatMessage.objects.create(
+            room=room,
+            sender=request.user,
+            text=text_content.strip()
+        )
+
+        # Touch/update room timestamp so it appears at top of active chats
+        room.save()
+
+        serializer = ChatMessageSerializer(message, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
     def send_image(self, request, pk=None):
         room = self.get_object()
         serializer = ChatMessageSerializer(data=request.data, context={'request': request})

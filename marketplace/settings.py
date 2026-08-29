@@ -118,6 +118,8 @@ else:
             'PORT': config('DB_PORT', default='3306'),
             'OPTIONS': {
                 'charset': 'utf8mb4',
+                'use_unicode': True,
+                'init_command': "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci;",
             },
         }
     }

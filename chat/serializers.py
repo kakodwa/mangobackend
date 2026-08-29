@@ -3,12 +3,24 @@ from .models import ChatRoom, ChatMessage
 from users.models import User
 
 class ChatMessageSerializer(serializers.ModelSerializer):
+    sender_id = serializers.IntegerField(source='sender.id', read_only=True)
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
     image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'room', 'sender', 'sender_name', 'text', 'image', 'image_url', 'is_read', 'created_at']
+        fields = [
+            'id', 
+            'room', 
+            'sender', 
+            'sender_id', 
+            'sender_name', 
+            'text', 
+            'image', 
+            'image_url', 
+            'is_read', 
+            'created_at'
+        ]
         read_only_fields = ['id', 'created_at']
 
     def get_image_url(self, obj):
@@ -25,7 +37,18 @@ class ChatRoomSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChatRoom
-        fields = ['id', 'buyer', 'buyer_name', 'seller', 'seller_name', 'product', 'product_name', 'last_message', 'created_at', 'updated_at']
+        fields = [
+            'id', 
+            'buyer', 
+            'buyer_name', 
+            'seller', 
+            'seller_name', 
+            'product', 
+            'product_name', 
+            'last_message', 
+            'created_at', 
+            'updated_at'
+        ]
 
     def get_last_message(self, obj):
         msg = obj.messages.last()
