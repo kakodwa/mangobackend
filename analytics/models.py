@@ -13,3 +13,14 @@ class AppEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_name} - {self.device_type} (GPS: {self.latitude}, {self.longitude})"
+
+
+class DownloadLog(models.Model):
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    downloaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Download on {self.downloaded_at.strftime('%Y-%m-%d %H:%M')} (Lat: {self.latitude}, Lon: {self.longitude})"

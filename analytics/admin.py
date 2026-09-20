@@ -2,6 +2,12 @@
 
 from django.contrib import admin
 from .models import AppEvent
+from .models import DownloadLog
+
+@admin.register(DownloadLog)
+class DownloadLogAdmin(admin.ModelAdmin):
+    list_display = ('downloaded_at', 'latitude', 'longitude', 'ip_address')
+    readonly_fields = ('downloaded_at', 'latitude', 'longitude', 'ip_address', 'user_agent')
 
 
 @admin.register(AppEvent)

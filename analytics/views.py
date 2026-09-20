@@ -1,4 +1,6 @@
 # analytics/views.py
+
+import os
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -22,7 +24,40 @@ from django.db.models import Count
 from django.db.models.functions import TruncDay
 from django.utils import timezone
 
-from .models import AppEvent
+from .models import AppEvent,DownloadLog
+
+
+from django.http import FileResponse, Http404
+from django.conf import settings
+
+
+def track_and_download(request):
+    # Get GPS coordinates passed from frontend JS
+    latitude = request.GET.get('lat')
+    longitude = request.GET.get('lon')
+    
+    # Get client IP address
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        ip = x_forwarded_for.split(',')[0]
+    else:
+        ip = request.META.get('REMOTE_ADDR')
+
+    # Record download in Python database
+    DownloadLog.objects.create(
+        ip_address=ip,
+        latitude=float(latitude) if latitude else None,
+        longitude=float(longitude) if longitude else None,
+        user_agent=request.META.get('HTTP_USER_AGENT', '')
+    )
+
+    # Path to your APK file inside your static or media directory
+    apk_path = os.path.join(settings.BASE_DIR, 'static', 'downloads', 'MalaTrade.apk')
+
+    if os.path.exists(apk_path):
+        return FileResponse(open(apk_path, 'rb'), as_attachment=True, filename='MalaTrade.apk')
+    else:
+        raise Http404("APK file not found.")
 
 
 def get_dashboard_analytics(days=7, top_events=7):

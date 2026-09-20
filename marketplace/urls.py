@@ -71,7 +71,7 @@ def serve_ios_apple_association(request):
             "apps": [],
             "details": [
                 {
-                    # 🌟 TODO: Replace "YOUR_APPLE_TEAM_ID" with your 10-character Apple Developer Team ID
+                    # TODO: Replace "YOUR_APPLE_TEAM_ID" with your 10-character Apple Developer Team ID
                     "appID": "YOUR_APPLE_TEAM_ID.com.mangochi.marketplace",
                     "components": [
                         { "/": "/shop/*" },
