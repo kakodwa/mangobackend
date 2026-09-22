@@ -687,10 +687,16 @@
 
             // --- B. Leaflet Geospatial Tracking Setup ---
             const map = L.map('userTrackingMap').setView([-13.96, 33.77], 6.5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+
+            L.tileLayer(
+                'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_3tux_1_a437ee9aa2a4868d762ed346',
+                {
+                    maxZoom: 20,
+                    subdomains: 'abcd',
+                    attribution:
+                        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+                }
+            ).addTo(map);
 
             if (serverData.locations && serverData.locations.length > 0) {
                 const heatIntensityMatrix = serverData.locations.map(coord => [parseFloat(coord[0]), parseFloat(coord[1]), 0.8]);
@@ -776,7 +782,7 @@
                 chart: { type: 'donut', height: 320, background: 'transparent' },
                 series: [55, 25, 15, 5],
                 labels: ['Order Payments', 'Property Unlocks', 'Lodge Bookings', 'Ticket Purchases'],
-                colors: [mangoOrange, leafGreen, '#22c55e', '#ea580c'],
+                colors: ['#f97316', '#10b981', '#3b82f6', '#8b5cf6'], // Distinct palette: Orange, Emerald, Blue, Purple
                 theme: { mode: document.documentElement.classList.contains('dark') ? 'dark' : 'light' },
                 legend: { position: 'bottom' }
             };

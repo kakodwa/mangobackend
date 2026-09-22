@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Submitted - MalaTrade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: { 500: '#ea580c', 600: '#c2410c' },
+                            green: { 500: '#22c55e', 600: '#16a34a', 700: '#15803d' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-white dark:bg-gray-800 rounded-3xl border border-gray-200 dark:border-gray-700 shadow-2xl p-8 text-center space-y-6">
+        
+        <!-- Logo Header -->
+        <div>
+            <a href="https://www.malatrade.com" target="_blank" class="inline-block">
+                <img src="{% static 'img/logo.png' %}" alt="MalaTrade Logo" class="h-10 w-auto mx-auto object-contain">
+            </a>
+        </div>
+
+        <!-- Checkmark Badge -->
+        <div class="w-20 h-20 bg-brand-green-100 dark:bg-brand-green-900/30 text-brand-green-600 dark:text-brand-green-400 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-brand-green-500/20">
+            <i class="fa-solid fa-check"></i>
+        </div>
+
+        <div class="space-y-2">
+            <h1 class="text-2xl font-extrabold text-gray-900 dark:text-white">Application Received!</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+                Thank you for applying to join the <span class="font-semibold text-brand-orange-500">MalaTrade</span> team. Our recruitment team will review your CV and contact you shortly.
+            </p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-gray-50 dark:bg-gray-700/50 border border-gray-100 dark:border-gray-600 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+            <p><i class="fa-solid fa-envelope mr-1 text-brand-orange-500"></i> Confirmation sent to your email</p>
+            <p><i class="fa-solid fa-briefcase mr-1 text-brand-green-600"></i> MalaTrade Recruitment Team</p>
+        </div>
+
+        <div class="pt-2 space-y-3">
+            <!-- Primary Action: Visit Marketplace Platform -->
+            <a href="https://www.malatrade.com" target="_blank" class="flex items-center justify-center gap-2 w-full py-3.5 bg-brand-orange-500 hover:bg-brand-orange-600 text-white font-bold rounded-xl transition-all shadow-lg shadow-brand-orange-500/30 text-sm">
+                <i class="fa-solid fa-globe"></i> Visit Our Platform (www.malatrade.com)
+            </a>
+
+            <!-- Secondary Action: Return / Submit Another -->
+            <a href="{% url 'careers:vacancy_list' %}" class="inline-flex items-center justify-center gap-2 w-full py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 font-bold rounded-xl transition-all text-xs">
+                <i class="fa-solid fa-arrow-left"></i> Back to Open Careers
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -52,7 +52,8 @@ INSTALLED_APPS = [
     'analytics',
     'admin_app',
     'mangohub',
-    'chat', 
+    'chat',
+    'career',
 
     'cloudinary_storage',
     'cloudinary',

@@ -130,6 +130,7 @@ urlpatterns = [
     ),
     path("privacy/", views.PrivacyPolicyView.as_view(), name="privacy_policy"),
     path("api/feed/", include("feed_engine.urls")),
+    path("career/", include("career.urls")),
     path("admin_app", include("admin_app.urls")),
     path("", include("shops.urls")),
     
