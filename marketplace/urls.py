@@ -129,6 +129,7 @@ urlpatterns = [
         name="how_it_works",
     ),
     path("privacy/", views.PrivacyPolicyView.as_view(), name="privacy_policy"),
+    path("delete-account/",views.DeleteAccount.as_view(),name="delete-account"),
     path("api/feed/", include("feed_engine.urls")),
     path("career/", include("career.urls")),
     path("admin_app", include("admin_app.urls")),

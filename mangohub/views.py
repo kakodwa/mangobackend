@@ -142,3 +142,7 @@ class TermsAndConditionsView(TemplateView):
 
 class PrivacyPolicyView(TemplateView):
     template_name = "legal/privacy.html"
+
+
+class DeleteAccount(TemplateView):
+    template_name = "delete-account.html"
